@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2 } from "lucide-react";
+import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye } from "lucide-react";
 
 interface PostPreviewProps {
   variation: {
@@ -22,6 +22,7 @@ interface PostPreviewProps {
   onSelect: () => void;
   onApprove: () => void;
   onGenerateImage?: (index: number) => Promise<void>;
+  onPreview?: () => void;
 }
 
 export default function PostPreview({
@@ -32,6 +33,7 @@ export default function PostPreview({
   onSelect,
   onApprove,
   onGenerateImage,
+  onPreview,
 }: PostPreviewProps) {
   const isLinkedIn = variation.platform === "linkedin";
   const [generatingImg, setGeneratingImg] = useState(false);
@@ -125,6 +127,19 @@ export default function PostPreview({
         )}
 
         <div className="flex gap-2 pt-1">
+          {onPreview && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreview();
+              }}
+            >
+              <Eye className="h-3 w-3" /> Preview
+            </Button>
+          )}
           <Button
             size="sm"
             className="flex-1 gradient-primary gap-1"
