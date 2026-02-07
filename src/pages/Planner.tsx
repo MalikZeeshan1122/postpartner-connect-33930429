@@ -150,6 +150,24 @@ const Planner = () => {
     if (selectedPlan) fetchItems(selectedPlan);
   };
 
+  const handleItemDrop = async (itemId: string, newDate: string) => {
+    const { error } = await supabase
+      .from("plan_items")
+      .update({ scheduled_date: newDate })
+      .eq("id", itemId);
+    if (error) {
+      toast({ title: "Failed to reschedule", variant: "destructive" });
+    } else {
+      // Optimistic update
+      setPlanItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId ? { ...item, scheduled_date: newDate } : item
+        )
+      );
+      toast({ title: `Rescheduled to ${newDate}` });
+    }
+  };
+
   const handleDayClick = (date: Date) => {
     if (!selectedPlan) {
       toast({ title: "Select or create a plan first", variant: "destructive" });
@@ -279,6 +297,7 @@ const Planner = () => {
             onItemClick={(item) =>
               navigate(`/generate?itemId=${item.id}&planId=${selectedPlan}`)
             }
+            onItemDrop={handleItemDrop}
           />
         ) : (
           <div className="space-y-3">
