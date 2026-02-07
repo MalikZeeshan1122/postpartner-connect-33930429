@@ -138,6 +138,56 @@ export type Database = {
           },
         ]
       }
+      post_analytics: {
+        Row: {
+          clicks: number
+          comments: number
+          created_at: string
+          engagement_rate: number | null
+          id: string
+          likes: number
+          recorded_at: string
+          scheduled_post_id: string | null
+          shares: number
+          user_id: string
+          views: number
+        }
+        Insert: {
+          clicks?: number
+          comments?: number
+          created_at?: string
+          engagement_rate?: number | null
+          id?: string
+          likes?: number
+          recorded_at?: string
+          scheduled_post_id?: string | null
+          shares?: number
+          user_id: string
+          views?: number
+        }
+        Update: {
+          clicks?: number
+          comments?: number
+          created_at?: string
+          engagement_rate?: number | null
+          id?: string
+          likes?: number
+          recorded_at?: string
+          scheduled_post_id?: string | null
+          shares?: number
+          user_id?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_analytics_scheduled_post_id_fkey"
+            columns: ["scheduled_post_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_variations: {
         Row: {
           caption: string
@@ -405,15 +455,72 @@ export type Database = {
         }
         Relationships: []
       }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -540,6 +647,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "admin", "editor", "viewer"],
+    },
   },
 } as const
