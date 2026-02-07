@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye, CalendarDays, Download } from "lucide-react";
+import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye, CalendarDays, Download, Share2 } from "lucide-react";
 
 interface PostPreviewProps {
   variation: {
@@ -26,6 +26,8 @@ interface PostPreviewProps {
   onSchedule?: () => void;
   onExportImage?: () => void;
   onExportCaption?: () => void;
+  onShare?: () => void;
+  sharing?: boolean;
 }
 
 export default function PostPreview({
@@ -40,6 +42,8 @@ export default function PostPreview({
   onSchedule,
   onExportImage,
   onExportCaption,
+  onShare,
+  sharing,
 }: PostPreviewProps) {
   const isLinkedIn = variation.platform === "linkedin";
   const [generatingImg, setGeneratingImg] = useState(false);
@@ -141,6 +145,11 @@ export default function PostPreview({
           {onSchedule && (
             <Button size="sm" variant="outline" className="gap-1" onClick={(e) => { e.stopPropagation(); onSchedule(); }}>
               <CalendarDays className="h-3 w-3" /> Schedule
+            </Button>
+          )}
+          {onShare && (
+            <Button size="sm" variant="outline" className="gap-1" onClick={(e) => { e.stopPropagation(); onShare(); }} disabled={sharing}>
+              {sharing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />} Share
             </Button>
           )}
           <Button

@@ -13,6 +13,7 @@ import Schedule from "./pages/Schedule";
 import Settings from "./pages/Settings";
 import Media from "./pages/Media";
 import NotFound from "./pages/NotFound";
+import SharedPost from "./pages/SharedPost";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/planner" element={<Planner />} />
           <Route path="/generate" element={<Generate />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/share/:token" element={<SharedPost />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/media" element={<Media />} />
           <Route path="*" element={<NotFound />} />
