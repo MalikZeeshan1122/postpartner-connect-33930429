@@ -8,13 +8,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Check, RefreshCw, Linkedin, Instagram, MessageSquare, ImageIcon, Eye } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, MessageSquare, ImageIcon, Video } from "lucide-react";
 import PostPreview from "@/components/PostPreview";
+import CarouselPreview from "@/components/CarouselPreview";
+import StoryPreview from "@/components/StoryPreview";
+import VideoPreview from "@/components/VideoPreview";
 import ContentSuggestions from "@/components/ContentSuggestions";
 import LinkedInMockup, { InstagramMockup } from "@/components/PlatformMockups";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Linkedin, Instagram, Check, Eye } from "lucide-react";
+
+const FORMAT_OPTIONS = [
+  { id: "single", label: "Single Post" },
+  { id: "carousel", label: "Carousel" },
+  { id: "story", label: "Story" },
+] as const;
 
 const Generate = () => {
   const { user, loading: authLoading } = useAuth();
@@ -31,6 +42,7 @@ const Generate = () => {
   const [tone, setTone] = useState("");
   const [cta, setCta] = useState("");
   const [extraContext, setExtraContext] = useState("");
+  const [selectedFormats, setSelectedFormats] = useState<string[]>(["single"]);
   const [generating, setGenerating] = useState(false);
   const [variations, setVariations] = useState<any[]>([]);
   const [feedback, setFeedback] = useState<any[]>([]);
@@ -65,10 +77,15 @@ const Generate = () => {
       setTone(data.tone || "");
       setCta(data.cta || "");
       setExtraContext(data.extra_context || "");
-      // Load brand
       const { data: brand } = await supabase.from("brands").select("*").eq("id", data.content_plans?.brand_id).single();
       if (brand) setSelectedBrand(brand);
     }
+  };
+
+  const toggleFormat = (format: string) => {
+    setSelectedFormats((prev) =>
+      prev.includes(format) ? prev.filter((f) => f !== format) : [...prev, format]
+    );
   };
 
   const handleGenerate = async () => {
@@ -84,14 +101,11 @@ const Generate = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-post", {
         body: {
-          intent,
-          platform,
-          tone,
-          cta,
-          extraContext,
+          intent, platform, tone, cta, extraContext,
           brandVoice: selectedBrand?.brand_voice,
           visualIdentity: selectedBrand?.visual_identity,
           variationCount: 3,
+          formats: selectedFormats,
         },
       });
 
@@ -131,6 +145,29 @@ const Generate = () => {
     }
   };
 
+  const handleGenerateVideo = async (index: number) => {
+    const v = variations[index];
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-video", {
+        body: {
+          imageUrl: v.imageUrl || undefined,
+          prompt: v.imagePrompt,
+          brandName: selectedBrand?.name,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.videoUrl) {
+        setVariations((prev) =>
+          prev.map((item, i) => (i === index ? { ...item, videoUrl: data.videoUrl } : item))
+        );
+        toast({ title: "Video generated!" });
+      }
+    } catch (e: any) {
+      toast({ title: e.message || "Video generation failed", variant: "destructive" });
+    }
+  };
+
   const handleGenerateAllImages = async () => {
     for (let i = 0; i < variations.length; i++) {
       if (!variations[i].imageUrl) {
@@ -149,16 +186,13 @@ const Generate = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-post", {
         body: {
-          intent,
-          platform,
-          tone,
-          cta,
-          extraContext,
+          intent, platform, tone, cta, extraContext,
           brandVoice: selectedBrand?.brand_voice,
           visualIdentity: selectedBrand?.visual_identity,
           variationCount: 2,
           existingCaption: variations[selectedVariation]?.caption,
           userFeedback: editFeedback,
+          formats: selectedFormats,
         },
       });
 
@@ -201,6 +235,67 @@ const Generate = () => {
     }
   };
 
+  const renderVariation = (v: any, i: number) => {
+    const format = v.format || "single";
+
+    if (format === "carousel" && v.carouselSlides?.length) {
+      return (
+        <div key={i} className="space-y-2">
+          <CarouselPreview
+            slides={v.carouselSlides}
+            platform={v.platform}
+            caption={v.caption}
+            brandName={selectedBrand?.name}
+          />
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="gap-1 flex-1" onClick={() => setPreviewVariation(v)}>
+              <Eye className="h-3 w-3" /> Preview
+            </Button>
+            <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
+              <Check className="h-3 w-3" /> Approve
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (format === "story") {
+      return (
+        <div key={i} className="space-y-2">
+          <StoryPreview
+            textOverlay={v.textOverlay}
+            imageUrl={v.imageUrl}
+            brandName={selectedBrand?.name}
+            ctaText={v.ctaText}
+          />
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="gap-1 flex-1" onClick={() => handleGenerateImage(i)}>
+              <ImageIcon className="h-3 w-3" /> Image
+            </Button>
+            <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
+              <Check className="h-3 w-3" /> Approve
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Default: single post
+    return (
+      <PostPreview
+        key={i}
+        variation={v}
+        index={i}
+        isSelected={selectedVariation === i}
+        feedbackItem={feedback[i]}
+        onSelect={() => setSelectedVariation(i)}
+        onApprove={() => handleSaveVariation(v, i)}
+        onGenerateImage={handleGenerateImage}
+        onPreview={() => setPreviewVariation(v)}
+      />
+    );
+  };
+
   if (authLoading) return <AppLayout><div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div></AppLayout>;
 
   return (
@@ -241,6 +336,23 @@ const Generate = () => {
                 </Select>
               </div>
             </div>
+
+            {/* Format selection */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Post Formats</label>
+              <div className="flex flex-wrap gap-4">
+                {FORMAT_OPTIONS.map((fmt) => (
+                  <label key={fmt.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={selectedFormats.includes(fmt.id)}
+                      onCheckedChange={() => toggleFormat(fmt.id)}
+                    />
+                    <span className="text-sm">{fmt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium">Post Intent *</label>
               <Textarea
@@ -255,11 +367,7 @@ const Generate = () => {
               <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="CTA (e.g. Register now)" />
               <Input value={extraContext} onChange={(e) => setExtraContext(e.target.value)} placeholder="Extra context" />
             </div>
-            <Button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="gradient-primary gap-2"
-            >
+            <Button onClick={handleGenerate} disabled={generating} className="gradient-primary gap-2">
               {generating ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Generating & reviewing...</>
               ) : (
@@ -282,32 +390,48 @@ const Generate = () => {
         {/* Variations */}
         {variations.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-lg font-semibold">Generated Variations ({variations.length})</h2>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1"
-                onClick={handleGenerateAllImages}
-              >
-                <ImageIcon className="h-4 w-4" /> Generate All Images
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="gap-1" onClick={handleGenerateAllImages}>
+                  <ImageIcon className="h-4 w-4" /> Generate All Images
+                </Button>
+              </div>
             </div>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {variations.map((v, i) => (
-                <PostPreview
-                  key={i}
-                  variation={v}
-                  index={i}
-                  isSelected={selectedVariation === i}
-                  feedbackItem={feedback[i]}
-                  onSelect={() => setSelectedVariation(i)}
-                  onApprove={() => handleSaveVariation(v, i)}
-                  onGenerateImage={handleGenerateImage}
-                  onPreview={() => setPreviewVariation(v)}
-                />
-              ))}
+              {variations.map((v, i) => renderVariation(v, i))}
             </div>
+
+            {/* Video generation section */}
+            {variations.some((v) => v.imageUrl) && (
+              <Card className="border-accent/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Video className="h-5 w-5" /> Animated Video Posts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate 5-second animated versions of your posts for higher engagement.
+                  </p>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {variations.map((v, i) =>
+                      v.imageUrl ? (
+                        <VideoPreview
+                          key={`video-${i}`}
+                          imageUrl={v.imageUrl}
+                          videoUrl={v.videoUrl}
+                          textOverlay={v.textOverlay}
+                          platform={v.platform}
+                          onGenerateVideo={() => handleGenerateVideo(i)}
+                        />
+                      ) : null
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Iterate */}
             <Card className="border-primary/20">

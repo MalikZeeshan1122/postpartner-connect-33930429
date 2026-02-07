@@ -12,9 +12,9 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { intent, platform, tone, cta, extraContext, brandVoice, visualIdentity, variationCount = 3, existingCaption, userFeedback } = await req.json();
+    const { intent, platform, tone, cta, extraContext, brandVoice, visualIdentity, variationCount = 3, existingCaption, userFeedback, formats = ["single"] } = await req.json();
 
-    console.log("Generating posts for:", { intent, platform, tone, variationCount });
+    console.log("Generating posts for:", { intent, platform, tone, variationCount, formats });
 
     const isIteration = !!existingCaption && !!userFeedback;
 
@@ -29,7 +29,12 @@ Rules:
 - Keep Instagram posts punchy, use emojis strategically, include relevant hashtags (5-10)
 - Always include a clear CTA
 - Maintain brand voice consistency
-- Text overlays should be SHORT (5-8 words max), impactful, and readable on mobile`;
+- Text overlays should be SHORT (5-8 words max), impactful, and readable on mobile
+
+Requested formats: ${formats.join(', ')}
+- "single": Standard single-image post
+- "carousel": Multi-slide carousel (3-5 slides). Provide a "carouselSlides" array with textOverlay per slide
+- "story": Instagram/LinkedIn story format (vertical 9:16). Keep text very short and punchy`;
 
     let userPrompt: string;
 
@@ -79,12 +84,25 @@ ${extraContext ? `Additional Context: ${extraContext}` : ''}`;
                     type: "object",
                     properties: {
                       platform: { type: "string", enum: ["linkedin", "instagram"] },
+                      format: { type: "string", enum: ["single", "carousel", "story"], description: "Post format type" },
                       caption: { type: "string", description: "The full post caption text" },
                       textOverlay: { type: "string", description: "Short text for image overlay (5-8 words)" },
                       imagePrompt: { type: "string", description: "A detailed prompt for generating the background image. Should include brand colors, style, and mood." },
                       ctaText: { type: "string", description: "The call to action text" },
+                      carouselSlides: {
+                        type: "array",
+                        description: "Array of slides for carousel format (3-5 slides). Only for carousel format.",
+                        items: {
+                          type: "object",
+                          properties: {
+                            textOverlay: { type: "string", description: "Short text for this slide (5-8 words)" },
+                          },
+                          required: ["textOverlay"],
+                          additionalProperties: false,
+                        },
+                      },
                     },
-                    required: ["platform", "caption", "textOverlay", "imagePrompt", "ctaText"],
+                    required: ["platform", "format", "caption", "textOverlay", "imagePrompt", "ctaText"],
                     additionalProperties: false,
                   },
                 },
