@@ -45,7 +45,7 @@ const GOALS = [
 const SOCIALS = [
   {
     platform: "instagram",
-    label: "Instagram Business or Creator",
+    label: "Instagram Business or Creator Profile",
     color: "from-pink-500 to-purple-600",
     placeholder: "@yourbrand or instagram.com/yourbrand",
     helpUrl: "https://help.instagram.com/502981923235522",
@@ -61,7 +61,7 @@ const SOCIALS = [
   },
   {
     platform: "twitter",
-    label: "Twitter / X Profile",
+    label: "Twitter Profile",
     color: "from-zinc-700 to-zinc-900",
     placeholder: "@yourhandle",
     helpUrl: "https://help.twitter.com/en/using-x",
@@ -69,11 +69,35 @@ const SOCIALS = [
   },
   {
     platform: "linkedin",
-    label: "LinkedIn Profile or Page",
+    label: "LinkedIn Personal Profile",
     color: "from-blue-500 to-blue-700",
     placeholder: "@yourname or linkedin.com/in/yourname",
     helpUrl: "https://www.linkedin.com/help/linkedin",
-    helpText: "Link your LinkedIn profile or company page to publish professional content.",
+    helpText: "Link your LinkedIn personal profile to publish professional content.",
+  },
+  {
+    platform: "linkedin_page",
+    label: "LinkedIn Page",
+    color: "from-blue-500 to-blue-700",
+    placeholder: "linkedin.com/company/yourcompany",
+    helpUrl: "https://www.linkedin.com/help/linkedin",
+    helpText: "Link your LinkedIn company page to publish content on behalf of your organization.",
+  },
+  {
+    platform: "google_business",
+    label: "Google My Business",
+    color: "from-green-500 to-blue-500",
+    placeholder: "Your business name",
+    helpUrl: "https://support.google.com/business",
+    helpText: "Connect your Google Business Profile to manage posts and updates for local search.",
+  },
+  {
+    platform: "pinterest",
+    label: "Pinterest Profile",
+    color: "from-red-600 to-red-700",
+    placeholder: "@yourprofile or pinterest.com/yourprofile",
+    helpUrl: "https://help.pinterest.com/en/business",
+    helpText: "Connect your Pinterest business account to schedule pins and idea pins.",
   },
   {
     platform: "tiktok",
@@ -92,20 +116,20 @@ const SOCIALS = [
     helpText: "Link your YouTube channel to plan video content and community posts.",
   },
   {
-    platform: "pinterest",
-    label: "Pinterest Profile",
-    color: "from-red-600 to-red-700",
-    placeholder: "@yourprofile or pinterest.com/yourprofile",
-    helpUrl: "https://help.pinterest.com/en/business",
-    helpText: "Connect your Pinterest business account to schedule pins and idea pins.",
-  },
-  {
     platform: "threads",
     label: "Threads Profile",
     color: "from-zinc-600 to-zinc-800",
     placeholder: "@yourhandle",
     helpUrl: "https://help.instagram.com/788669719351498",
     helpText: "Link your Threads profile to create and plan text-based social content.",
+  },
+  {
+    platform: "bluesky",
+    label: "BlueSky Profile",
+    color: "from-sky-400 to-sky-600",
+    placeholder: "@yourhandle.bsky.social",
+    helpUrl: "https://bsky.social",
+    helpText: "Connect your BlueSky account to publish and schedule posts on the decentralized network.",
   },
 ];
 
@@ -280,67 +304,72 @@ export default function Onboarding() {
               <div className="text-center space-y-2">
                 <h1 className="text-2xl font-bold">Connect your social accounts</h1>
                 <p className="text-muted-foreground">
-                  Click on a platform below to link your account.
+                  Connect at least 1 social account to get started.
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+
+              <p className="text-sm text-muted-foreground">
+                To get started, click on a social account below and follow the prompts.{" "}
+                <a href="https://support.google.com/business" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Learn more</a>
+              </p>
+
+              <div className="grid gap-2">
                 {SOCIALS.map((social) => {
                   const connected = getConnected(social.platform);
                   return (
-                    <Card
+                    <div
                       key={social.platform}
-                      className={`transition-all ${
-                        connected ? "ring-2 ring-primary shadow-glow" : "hover:-translate-y-0.5 hover:shadow-glow"
+                      className={`flex items-center gap-3 rounded-lg border p-3 transition-all cursor-pointer ${
+                        connected
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
                       }`}
+                      onClick={() => !connected && openConnect(social)}
                     >
-                      <CardContent className="flex items-center gap-3 p-4">
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${social.color} cursor-pointer`}
-                          onClick={() => !connected && openConnect(social)}
-                        >
-                          {socialIcons[social.platform]
-                            ? socialIcons[social.platform]({ className: "h-5 w-5 text-white" })
-                            : <span className="text-sm font-bold text-white">{social.platform[0].toUpperCase()}</span>
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0" onClick={() => !connected && openConnect(social)} role="button">
-                          <p className="text-sm font-medium truncate">{social.label}</p>
-                          {connected ? (
-                            <p className="text-xs text-primary truncate">@{connected.account_name}</p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">Click to connect</p>
-                          )}
-                        </div>
-                        {connected ? (
-                          <button
-                            onClick={() => handleDisconnect(social.platform)}
-                            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                            title="Disconnect"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openConnect(social)}
-                            className="shrink-0"
-                          >
-                            <Link2 className="h-3.5 w-3.5 mr-1" />
-                            Connect
-                          </Button>
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${social.color}`}
+                      >
+                        {socialIcons[social.platform]
+                          ? socialIcons[social.platform]({ className: "h-4 w-4 text-white" })
+                          : <span className="text-xs font-bold text-white">{social.label[0]}</span>
+                        }
+                      </div>
+                      <span className="flex-1 text-sm font-medium truncate">
+                        {social.label}
+                        {connected && (
+                          <span className="ml-2 text-xs text-primary">@{connected.account_name}</span>
                         )}
-                      </CardContent>
-                    </Card>
+                      </span>
+                      {connected ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDisconnect(social.platform); }}
+                          className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          title="Disconnect"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                    </div>
                   );
                 })}
               </div>
 
               {/* Trust badges */}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> Never store passwords</span>
-                <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Minimum permissions</span>
-                <span className="flex items-center gap-1"><X className="h-3.5 w-3.5" /> Revoke anytime</span>
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> We never collect or store your social media passwords</span>
+                <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Officially approved by social networks</span>
+                <span className="flex items-center gap-1"><X className="h-3.5 w-3.5" /> Revoke access anytime</span>
+                <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Minimum permissions only</span>
+              </div>
+
+              {/* Testimonial */}
+              <div className="rounded-lg border bg-muted/30 p-4 text-center space-y-2">
+                <p className="text-sm italic text-muted-foreground">
+                  "I've been using PostPartner for years now and it's hands down the best social media tool out there."
+                </p>
+                <p className="text-xs font-medium text-foreground">Ash — Founder & Social Media Manager</p>
               </div>
             </>
           )}
