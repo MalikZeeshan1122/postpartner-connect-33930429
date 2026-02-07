@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Check, RefreshCw, Linkedin, Instagram, MessageSquare } from "lucide-react";
+import { Loader2, Sparkles, Check, RefreshCw, Linkedin, Instagram, MessageSquare, ImageIcon } from "lucide-react";
 import PostPreview from "@/components/PostPreview";
 
 const Generate = () => {
@@ -99,6 +99,39 @@ const Generate = () => {
     }
   };
 
+  const handleGenerateImage = async (index: number) => {
+    const v = variations[index];
+    if (!v?.imagePrompt) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-image", {
+        body: {
+          prompt: v.imagePrompt,
+          textOverlay: v.textOverlay,
+          brandColors: selectedBrand?.visual_identity?.primaryColors || [],
+        },
+      });
+
+      if (error) throw error;
+      if (data?.imageUrl) {
+        setVariations((prev) =>
+          prev.map((item, i) => (i === index ? { ...item, imageUrl: data.imageUrl } : item))
+        );
+        toast({ title: "Image generated!" });
+      }
+    } catch (e: any) {
+      toast({ title: e.message || "Image generation failed", variant: "destructive" });
+    }
+  };
+
+  const handleGenerateAllImages = async () => {
+    for (let i = 0; i < variations.length; i++) {
+      if (!variations[i].imageUrl) {
+        await handleGenerateImage(i);
+      }
+    }
+  };
+
   const handleIterate = async () => {
     if (selectedVariation === null || !editFeedback.trim()) {
       toast({ title: "Select a variation and provide feedback", variant: "destructive" });
@@ -147,6 +180,7 @@ const Generate = () => {
         platform: variation.platform,
         caption: variation.caption,
         image_prompt: variation.imagePrompt,
+        image_url: variation.imageUrl || null,
         text_overlay: variation.textOverlay,
         feedback_score: feedback[index]?.score || null,
         feedback_notes: feedback[index] ? [feedback[index]] : [],
@@ -231,7 +265,17 @@ const Generate = () => {
         {/* Variations */}
         {variations.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Generated Variations ({variations.length})</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Generated Variations ({variations.length})</h2>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1"
+                onClick={handleGenerateAllImages}
+              >
+                <ImageIcon className="h-4 w-4" /> Generate All Images
+              </Button>
+            </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {variations.map((v, i) => (
                 <PostPreview
@@ -242,6 +286,7 @@ const Generate = () => {
                   feedbackItem={feedback[i]}
                   onSelect={() => setSelectedVariation(i)}
                   onApprove={() => handleSaveVariation(v, i)}
+                  onGenerateImage={handleGenerateImage}
                 />
               ))}
             </div>
