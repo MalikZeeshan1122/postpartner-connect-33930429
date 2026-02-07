@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import SocialConnectDialog from "@/components/SocialConnectDialog";
 import {
   Sparkles,
   Briefcase,
@@ -19,6 +20,10 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
+  Link2,
+  X,
+  Shield,
+  Lock,
 } from "lucide-react";
 
 const ROLES = [
@@ -37,17 +42,78 @@ const GOALS = [
 ];
 
 const SOCIALS = [
-  { platform: "instagram", label: "Instagram Business or Creator", color: "from-pink-500 to-purple-600" },
-  { platform: "facebook", label: "Facebook Page", color: "from-blue-600 to-blue-700" },
-  { platform: "twitter", label: "Twitter / X Profile", color: "from-zinc-700 to-zinc-900" },
-  { platform: "linkedin", label: "LinkedIn Profile", color: "from-blue-500 to-blue-700" },
-  { platform: "tiktok", label: "TikTok Profile", color: "from-zinc-800 to-zinc-900" },
-  { platform: "youtube", label: "YouTube Channel", color: "from-red-500 to-red-700" },
-  { platform: "pinterest", label: "Pinterest Profile", color: "from-red-600 to-red-700" },
-  { platform: "threads", label: "Threads Profile", color: "from-zinc-600 to-zinc-800" },
+  {
+    platform: "instagram",
+    label: "Instagram Business or Creator",
+    color: "from-pink-500 to-purple-600",
+    placeholder: "@yourbrand or instagram.com/yourbrand",
+    helpUrl: "https://help.instagram.com/502981923235522",
+    helpText: "Connect your Instagram Business or Creator account to schedule posts and stories directly.",
+  },
+  {
+    platform: "facebook",
+    label: "Facebook Page",
+    color: "from-blue-600 to-blue-700",
+    placeholder: "@yourpage or facebook.com/yourpage",
+    helpUrl: "https://www.facebook.com/business/help",
+    helpText: "Link your Facebook Page to publish and schedule content. Personal profiles are not supported.",
+  },
+  {
+    platform: "twitter",
+    label: "Twitter / X Profile",
+    color: "from-zinc-700 to-zinc-900",
+    placeholder: "@yourhandle",
+    helpUrl: "https://help.twitter.com/en/using-x",
+    helpText: "Connect your X account to compose and schedule tweets with AI-generated content.",
+  },
+  {
+    platform: "linkedin",
+    label: "LinkedIn Profile or Page",
+    color: "from-blue-500 to-blue-700",
+    placeholder: "@yourname or linkedin.com/in/yourname",
+    helpUrl: "https://www.linkedin.com/help/linkedin",
+    helpText: "Link your LinkedIn profile or company page to publish professional content.",
+  },
+  {
+    platform: "tiktok",
+    label: "TikTok Profile",
+    color: "from-zinc-800 to-zinc-900",
+    placeholder: "@yourhandle",
+    helpUrl: "https://www.tiktok.com/creators/creator-portal",
+    helpText: "Connect your TikTok account to plan and schedule short-form video content.",
+  },
+  {
+    platform: "youtube",
+    label: "YouTube Channel",
+    color: "from-red-500 to-red-700",
+    placeholder: "@yourchannel or youtube.com/@yourchannel",
+    helpUrl: "https://support.google.com/youtube/answer/1646861",
+    helpText: "Link your YouTube channel to plan video content and community posts.",
+  },
+  {
+    platform: "pinterest",
+    label: "Pinterest Profile",
+    color: "from-red-600 to-red-700",
+    placeholder: "@yourprofile or pinterest.com/yourprofile",
+    helpUrl: "https://help.pinterest.com/en/business",
+    helpText: "Connect your Pinterest business account to schedule pins and idea pins.",
+  },
+  {
+    platform: "threads",
+    label: "Threads Profile",
+    color: "from-zinc-600 to-zinc-800",
+    placeholder: "@yourhandle",
+    helpUrl: "https://help.instagram.com/788669719351498",
+    helpText: "Link your Threads profile to create and plan text-based social content.",
+  },
 ];
 
 const STEPS = ["Role", "Goal", "Socials"];
+
+interface ConnectedAccount {
+  platform: string;
+  account_name: string;
+}
 
 export default function Onboarding() {
   const { user, loading: authLoading } = useAuth();
@@ -57,8 +123,22 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<string | null>(null);
   const [goal, setGoal] = useState<string | null>(null);
-  const [connectedSocials, setConnectedSocials] = useState<Set<string>>(new Set());
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [saving, setSaving] = useState(false);
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<typeof SOCIALS[0] | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("social_connections")
+      .select("platform, account_name")
+      .eq("user_id", user.id)
+      .eq("connected", true)
+      .then(({ data }) => {
+        if (data) setConnectedAccounts(data.map((d) => ({ platform: d.platform, account_name: d.account_name ?? "" })));
+      });
+  }, [user]);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   if (!user) {
@@ -66,21 +146,30 @@ export default function Onboarding() {
     return null;
   }
 
-  const toggleSocial = async (platform: string) => {
-    const next = new Set(connectedSocials);
-    if (next.has(platform)) {
-      next.delete(platform);
-      await supabase.from("social_connections").delete().eq("user_id", user.id).eq("platform", platform);
-    } else {
-      next.add(platform);
-      await supabase.from("social_connections").insert({ user_id: user.id, platform, connected: true, connected_at: new Date().toISOString() });
-    }
-    setConnectedSocials(next);
+  const openConnect = (social: typeof SOCIALS[0]) => {
+    setSelectedPlatform(social);
+    setConnectDialogOpen(true);
+  };
+
+  const handleConnect = async (platform: string, accountName: string) => {
+    await supabase.from("social_connections").upsert(
+      { user_id: user.id, platform, account_name: accountName, connected: true, connected_at: new Date().toISOString() },
+      { onConflict: "user_id,platform" }
+    );
+    setConnectedAccounts((prev) => {
+      const filtered = prev.filter((a) => a.platform !== platform);
+      return [...filtered, { platform, account_name: accountName }];
+    });
+  };
+
+  const handleDisconnect = async (platform: string) => {
+    await supabase.from("social_connections").delete().eq("user_id", user.id).eq("platform", platform);
+    setConnectedAccounts((prev) => prev.filter((a) => a.platform !== platform));
   };
 
   const handleFinish = async () => {
     setSaving(true);
-    const { error } = await upsertProfile({ role, goal, onboarding_completed: true }) ?? {};
+    const { error } = (await upsertProfile({ role, goal, onboarding_completed: true })) ?? {};
     setSaving(false);
     if (error) {
       toast({ title: "Could not save profile", variant: "destructive" });
@@ -90,6 +179,7 @@ export default function Onboarding() {
   };
 
   const canAdvance = step === 0 ? !!role : step === 1 ? !!goal : true;
+  const getConnected = (platform: string) => connectedAccounts.find((a) => a.platform === platform);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -187,34 +277,67 @@ export default function Onboarding() {
           {step === 2 && (
             <>
               <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Connect your socials</h1>
-                <p className="text-muted-foreground">Select the platforms you want to create content for.</p>
+                <h1 className="text-2xl font-bold">Connect your social accounts</h1>
+                <p className="text-muted-foreground">
+                  Click on a platform below to link your account.
+                </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                {SOCIALS.map(({ platform, label, color }) => {
-                  const connected = connectedSocials.has(platform);
+                {SOCIALS.map((social) => {
+                  const connected = getConnected(social.platform);
                   return (
                     <Card
-                      key={platform}
-                      onClick={() => toggleSocial(platform)}
-                      className={`cursor-pointer transition-all ${
+                      key={social.platform}
+                      className={`transition-all ${
                         connected ? "ring-2 ring-primary shadow-glow" : "hover:-translate-y-0.5 hover:shadow-glow"
                       }`}
                     >
                       <CardContent className="flex items-center gap-3 p-4">
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${color}`}>
-                          <span className="text-sm font-bold text-white">{platform[0].toUpperCase()}</span>
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${social.color} cursor-pointer`}
+                          onClick={() => !connected && openConnect(social)}
+                        >
+                          <span className="text-sm font-bold text-white">{social.platform[0].toUpperCase()}</span>
                         </div>
-                        <p className="text-sm font-medium flex-1">{label}</p>
-                        {connected && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                        <div className="flex-1 min-w-0" onClick={() => !connected && openConnect(social)} role="button">
+                          <p className="text-sm font-medium truncate">{social.label}</p>
+                          {connected ? (
+                            <p className="text-xs text-primary truncate">@{connected.account_name}</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Click to connect</p>
+                          )}
+                        </div>
+                        {connected ? (
+                          <button
+                            onClick={() => handleDisconnect(social.platform)}
+                            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            title="Disconnect"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openConnect(social)}
+                            className="shrink-0"
+                          >
+                            <Link2 className="h-3.5 w-3.5 mr-1" />
+                            Connect
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   );
                 })}
               </div>
-              <p className="text-center text-xs text-muted-foreground">
-                You can always add more platforms later from settings.
-              </p>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> Never store passwords</span>
+                <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Minimum permissions</span>
+                <span className="flex items-center gap-1"><X className="h-3.5 w-3.5" /> Revoke anytime</span>
+              </div>
             </>
           )}
 
@@ -235,6 +358,13 @@ export default function Onboarding() {
           </div>
         </div>
       </div>
+
+      <SocialConnectDialog
+        open={connectDialogOpen}
+        onOpenChange={setConnectDialogOpen}
+        platform={selectedPlatform}
+        onConnect={handleConnect}
+      />
     </div>
   );
 }
