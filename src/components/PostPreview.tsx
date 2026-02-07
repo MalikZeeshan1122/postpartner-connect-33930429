@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye } from "lucide-react";
+import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye, CalendarDays, Download } from "lucide-react";
 
 interface PostPreviewProps {
   variation: {
@@ -23,6 +23,9 @@ interface PostPreviewProps {
   onApprove: () => void;
   onGenerateImage?: (index: number) => Promise<void>;
   onPreview?: () => void;
+  onSchedule?: () => void;
+  onExportImage?: () => void;
+  onExportCaption?: () => void;
 }
 
 export default function PostPreview({
@@ -34,6 +37,9 @@ export default function PostPreview({
   onApprove,
   onGenerateImage,
   onPreview,
+  onSchedule,
+  onExportImage,
+  onExportCaption,
 }: PostPreviewProps) {
   const isLinkedIn = variation.platform === "linkedin";
   const [generatingImg, setGeneratingImg] = useState(false);
@@ -126,31 +132,39 @@ export default function PostPreview({
           </div>
         )}
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 pt-1 flex-wrap">
           {onPreview && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPreview();
-              }}
-            >
+            <Button size="sm" variant="outline" className="gap-1" onClick={(e) => { e.stopPropagation(); onPreview(); }}>
               <Eye className="h-3 w-3" /> Preview
+            </Button>
+          )}
+          {onSchedule && (
+            <Button size="sm" variant="outline" className="gap-1" onClick={(e) => { e.stopPropagation(); onSchedule(); }}>
+              <CalendarDays className="h-3 w-3" /> Schedule
             </Button>
           )}
           <Button
             size="sm"
             className="flex-1 gradient-primary gap-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              onApprove();
-            }}
+            onClick={(e) => { e.stopPropagation(); onApprove(); }}
           >
             <Check className="h-3 w-3" /> Approve
           </Button>
         </div>
+        {(onExportImage || onExportCaption) && (
+          <div className="flex gap-1 pt-1">
+            {onExportImage && (
+              <Button size="sm" variant="ghost" className="gap-1 text-xs h-6 px-2" onClick={(e) => { e.stopPropagation(); onExportImage(); }}>
+                <Download className="h-3 w-3" /> Image
+              </Button>
+            )}
+            {onExportCaption && (
+              <Button size="sm" variant="ghost" className="gap-1 text-xs h-6 px-2" onClick={(e) => { e.stopPropagation(); onExportCaption(); }}>
+                <Download className="h-3 w-3" /> Caption
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

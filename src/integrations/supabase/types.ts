@@ -236,6 +236,65 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_posts: {
+        Row: {
+          brand_id: string | null
+          caption: string
+          created_at: string
+          cta_text: string | null
+          format: string
+          id: string
+          image_url: string | null
+          platform: string
+          scheduled_at: string
+          status: string
+          text_overlay: string | null
+          updated_at: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          caption: string
+          created_at?: string
+          cta_text?: string | null
+          format?: string
+          id?: string
+          image_url?: string | null
+          platform: string
+          scheduled_at: string
+          status?: string
+          text_overlay?: string | null
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          caption?: string
+          created_at?: string
+          cta_text?: string | null
+          format?: string
+          id?: string
+          image_url?: string | null
+          platform?: string
+          scheduled_at?: string
+          status?: string
+          text_overlay?: string | null
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_connections: {
         Row: {
           account_name: string | null
