@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +8,16 @@ import { Palette, CalendarDays, PenTool, Sparkles, ArrowRight } from "lucide-rea
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+  if (loading || profileLoading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   if (!user) {
     navigate("/auth");
+    return null;
+  }
+  if (!profile?.onboarding_completed) {
+    navigate("/onboarding");
     return null;
   }
 
