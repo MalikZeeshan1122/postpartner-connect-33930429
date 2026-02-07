@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import SocialConnectDialog from "@/components/SocialConnectDialog";
 import { socialIcons } from "@/components/icons/SocialIcons";
@@ -19,10 +21,16 @@ import {
   Target,
   Zap,
   Sparkles,
-  CheckCircle2,
   Link2,
   X,
   Save,
+  Camera,
+  Bell,
+  Mail,
+  CalendarClock,
+  BarChart3,
+  Loader2,
+  User as UserIcon,
 } from "lucide-react";
 
 const ROLES = [
@@ -60,6 +68,7 @@ export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading, upsertProfile } = useProfile();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [role, setRole] = useState<string | null>(null);
   const [goal, setGoal] = useState<string | null>(null);
@@ -69,10 +78,23 @@ export default function Settings() {
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<typeof SOCIALS[0] | null>(null);
 
+  // Notifications
+  const [notifyEmailDigest, setNotifyEmailDigest] = useState(true);
+  const [notifyPostReminders, setNotifyPostReminders] = useState(true);
+  const [notifyWeeklyReport, setNotifyWeeklyReport] = useState(false);
+
+  // Avatar
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   useEffect(() => {
     if (profile) {
       setRole(profile.role);
       setGoal(profile.goal);
+      setAvatarUrl(profile.avatar_url);
+      setNotifyEmailDigest(profile.notify_email_digest);
+      setNotifyPostReminders(profile.notify_post_reminders);
+      setNotifyWeeklyReport(profile.notify_weekly_report);
     }
   }, [profile]);
 
@@ -93,11 +115,52 @@ export default function Settings() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    const { error } = (await upsertProfile({ role, goal })) ?? {};
+    const { error } = (await upsertProfile({
+      role,
+      goal,
+      notify_email_digest: notifyEmailDigest,
+      notify_post_reminders: notifyPostReminders,
+      notify_weekly_report: notifyWeeklyReport,
+    })) ?? {};
     setSaving(false);
     setDirty(false);
     if (error) toast({ title: "Could not save", variant: "destructive" });
     else toast({ title: "Settings saved!" });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be under 5MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", variant: "destructive" });
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    await upsertProfile({ avatar_url: publicUrl });
+    setAvatarUrl(publicUrl);
+    setUploadingAvatar(false);
+    toast({ title: "Profile photo updated!" });
   };
 
   const handleConnect = async (platform: string, accountName: string) => {
@@ -114,12 +177,65 @@ export default function Settings() {
     toast({ title: `Disconnected ${platform}` });
   };
 
+  const handleToggleNotification = (setter: (v: boolean) => void, value: boolean) => {
+    setter(value);
+    setDirty(true);
+  };
+
   const getConnected = (platform: string) => connectedAccounts.find((a) => a.platform === platform);
 
   return (
     <AppLayout>
       <div className="mx-auto max-w-2xl space-y-6">
         <h1 className="text-2xl font-bold">Settings</h1>
+
+        {/* Profile Photo */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Profile Photo</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-5">
+            <div className="relative group">
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-muted">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <UserIcon className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                ) : (
+                  <Camera className="h-5 w-5 text-white" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium">{user.email}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+              >
+                {uploadingAvatar ? "Uploading..." : "Change Photo"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Role */}
         <Card>
@@ -160,6 +276,57 @@ export default function Settings() {
                 <Icon className="h-4 w-4 mr-1" /> {label}
               </Button>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Bell className="h-5 w-5" /> Notifications
+            </CardTitle>
+            <CardDescription>Choose what updates you'd like to receive.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <Label className="text-sm font-medium">Email Digests</Label>
+                  <p className="text-xs text-muted-foreground">Daily summary of your content performance</p>
+                </div>
+              </div>
+              <Switch
+                checked={notifyEmailDigest}
+                onCheckedChange={(v) => handleToggleNotification(setNotifyEmailDigest, v)}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-3">
+                <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <Label className="text-sm font-medium">Post Reminders</Label>
+                  <p className="text-xs text-muted-foreground">Get reminded when scheduled posts are due</p>
+                </div>
+              </div>
+              <Switch
+                checked={notifyPostReminders}
+                onCheckedChange={(v) => handleToggleNotification(setNotifyPostReminders, v)}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <Label className="text-sm font-medium">Weekly Report</Label>
+                  <p className="text-xs text-muted-foreground">Weekly analytics summary across all platforms</p>
+                </div>
+              </div>
+              <Switch
+                checked={notifyWeeklyReport}
+                onCheckedChange={(v) => handleToggleNotification(setNotifyWeeklyReport, v)}
+              />
+            </div>
           </CardContent>
         </Card>
 
