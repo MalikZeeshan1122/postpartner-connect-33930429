@@ -1,117 +1,406 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Palette, CalendarDays, PenTool, Sparkles, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import {
+  Lightbulb,
+  Loader2,
+  Zap,
+  Clock,
+  TrendingUp,
+  Megaphone,
+  Sparkles,
+  ArrowRight,
+  CalendarDays,
+  PenTool,
+  Palette,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
+
+interface Suggestion {
+  title: string;
+  intent: string;
+  platform: string;
+  category: string;
+  urgency: string;
+  reasoning: string;
+}
+
+const categoryIcons: Record<string, typeof Zap> = {
+  trending: TrendingUp,
+  evergreen: Clock,
+  engagement: Zap,
+  promotion: Megaphone,
+};
+
+const categoryLabels: Record<string, string> = {
+  trending: "Trending",
+  evergreen: "Evergreen",
+  engagement: "Engagement",
+  promotion: "Promotion",
+};
+
+const urgencyColors: Record<string, string> = {
+  now: "bg-destructive/10 text-destructive border-destructive/20",
+  this_week: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  this_month: "bg-primary/10 text-primary border-primary/20",
+  anytime: "bg-muted text-muted-foreground border-border",
+};
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
   const navigate = useNavigate();
 
-  if (loading || profileLoading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
-  if (!profile?.onboarding_completed) {
-    navigate("/onboarding");
-    return null;
+  const [brands, setBrands] = useState<any[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<any>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [stats, setStats] = useState({
+    totalPosts: 0,
+    approvedPosts: 0,
+    scheduledThisWeek: 0,
+    brands: 0,
+  });
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+      return;
+    }
+    if (user) {
+      fetchBrands();
+      fetchStats();
+    }
+  }, [user, loading]);
+
+  const fetchBrands = async () => {
+    const { data } = await supabase.from("brands").select("*");
+    setBrands(data || []);
+    if (data?.length) setSelectedBrand(data[0]);
+  };
+
+  const fetchStats = async () => {
+    const [planItems, approved, brands] = await Promise.all([
+      supabase.from("plan_items").select("id", { count: "exact", head: true }),
+      supabase.from("plan_items").select("id", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("brands").select("id", { count: "exact", head: true }),
+    ]);
+
+    // Scheduled this week
+    const now = new Date();
+    const weekEnd = new Date(now);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const { count: weekCount } = await supabase
+      .from("plan_items")
+      .select("id", { count: "exact", head: true })
+      .gte("scheduled_date", now.toISOString().split("T")[0])
+      .lte("scheduled_date", weekEnd.toISOString().split("T")[0]);
+
+    setStats({
+      totalPosts: planItems.count || 0,
+      approvedPosts: approved.count || 0,
+      scheduledThisWeek: weekCount || 0,
+      brands: brands.count || 0,
+    });
+  };
+
+  const fetchSuggestions = async () => {
+    if (!selectedBrand) {
+      toast({ title: "Select a brand first", variant: "destructive" });
+      return;
+    }
+    setLoadingSuggestions(true);
+    try {
+      const { data: existingItems } = await supabase
+        .from("plan_items")
+        .select("intent")
+        .limit(20);
+
+      const { data, error } = await supabase.functions.invoke("suggest-content", {
+        body: {
+          brandName: selectedBrand.name,
+          brandVoice: selectedBrand.brand_voice,
+          contentThemes: selectedBrand.brand_voice?.contentThemes || [],
+          existingPostIntents: existingItems?.map((i) => i.intent) || [],
+        },
+      });
+      if (error) throw error;
+      setSuggestions(data?.suggestions || []);
+    } catch (e: any) {
+      toast({ title: e.message || "Failed to get suggestions", variant: "destructive" });
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleUseSuggestion = (suggestion: Suggestion) => {
+    navigate(`/generate?intent=${encodeURIComponent(suggestion.intent)}&platform=${suggestion.platform}`);
+  };
+
+  const handleAddToPlan = async (suggestion: Suggestion) => {
+    // Get first plan or create one
+    const { data: plans } = await supabase
+      .from("content_plans")
+      .select("id")
+      .limit(1);
+
+    if (!plans?.length) {
+      toast({ title: "Create a content plan in the Calendar first", variant: "destructive" });
+      return;
+    }
+
+    const { error } = await supabase.from("plan_items").insert({
+      plan_id: plans[0].id,
+      user_id: user!.id,
+      intent: suggestion.intent,
+      platform: suggestion.platform,
+    });
+
+    if (error) {
+      toast({ title: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Added to your content plan!" });
+    }
+  };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      </AppLayout>
+    );
   }
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-4xl space-y-8">
+      <div className="mx-auto max-w-5xl space-y-6">
         {/* Hero */}
-        <div className="rounded-2xl gradient-primary p-8 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-3">
-            <Sparkles className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">PostPartner AI</h1>
+        <div className="rounded-2xl gradient-primary p-6 text-primary-foreground">
+          <div className="flex items-center gap-3 mb-2">
+            <Sparkles className="h-7 w-7" />
+            <h1 className="text-2xl font-bold">PostPartner AI</h1>
           </div>
-          <p className="text-lg opacity-90 max-w-xl">
-            Your AI companion for creating on-brand LinkedIn & Instagram posts. 
-            From brand analysis to published content — at machine speed.
+          <p className="text-sm opacity-90 max-w-xl">
+            Your AI companion for creating on-brand social media content. From brand
+            analysis to published posts — at machine speed.
           </p>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Total Posts", value: stats.totalPosts, icon: PenTool },
+            { label: "Approved", value: stats.approvedPosts, icon: Sparkles },
+            { label: "This Week", value: stats.scheduledThisWeek, icon: CalendarDays },
+            { label: "Brands", value: stats.brands, icon: Palette },
+          ].map(({ label, value, icon: Icon }) => (
+            <Card key={label}>
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{value}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
         {/* Quick actions */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-1" onClick={() => navigate("/brands")}>
-            <CardHeader className="pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-2">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Card
+            className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-0.5"
+            onClick={() => navigate("/brands")}
+          >
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <Palette className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle className="text-lg">Setup Brand</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                Define your brand voice, colors, and visual identity using AI analysis.
-              </p>
-              <div className="flex items-center text-sm font-medium text-primary">
-                Get started <ArrowRight className="ml-1 h-4 w-4" />
+              <div className="flex-1">
+                <p className="font-semibold text-sm">Setup Brand</p>
+                <p className="text-xs text-muted-foreground">AI analyzes your brand</p>
               </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
-
-          <Card className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-1" onClick={() => navigate("/planner")}>
-            <CardHeader className="pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20 mb-2">
+          <Card
+            className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-0.5"
+            onClick={() => navigate("/planner")}
+          >
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/20">
                 <CalendarDays className="h-5 w-5 text-accent-foreground" />
               </div>
-              <CardTitle className="text-lg">Plan Content</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                Create a content calendar with post intents, platforms, and scheduling.
-              </p>
-              <div className="flex items-center text-sm font-medium text-primary">
-                Plan posts <ArrowRight className="ml-1 h-4 w-4" />
+              <div className="flex-1">
+                <p className="font-semibold text-sm">Plan Content</p>
+                <p className="text-xs text-muted-foreground">Calendar & scheduling</p>
               </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
-
-          <Card className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-1" onClick={() => navigate("/generate")}>
-            <CardHeader className="pb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-2">
+          <Card
+            className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-0.5"
+            onClick={() => navigate("/generate")}
+          >
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <PenTool className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle className="text-lg">Generate Posts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                AI generates multiple on-brand variations with self-feedback loops.
-              </p>
-              <div className="flex items-center text-sm font-medium text-primary">
-                Create now <ArrowRight className="ml-1 h-4 w-4" />
+              <div className="flex-1">
+                <p className="font-semibold text-sm">Generate Posts</p>
+                <p className="text-xs text-muted-foreground">AI-powered creation</p>
               </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
         </div>
 
-        {/* Workflow */}
+        {/* AI Content Suggestions */}
         <Card>
-          <CardHeader>
-            <CardTitle>How It Works</CardTitle>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-amber-500" />
+                AI Content Ideas
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                {brands.length > 1 && (
+                  <Select
+                    value={selectedBrand?.id || ""}
+                    onValueChange={(v) => setSelectedBrand(brands.find((b) => b.id === v))}
+                  >
+                    <SelectTrigger className="w-36 h-8 text-xs">
+                      <SelectValue placeholder="Brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brands.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button
+                  size="sm"
+                  onClick={fetchSuggestions}
+                  disabled={loadingSuggestions || !selectedBrand}
+                  className="gap-1"
+                >
+                  {loadingSuggestions ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : suggestions.length ? (
+                    <RefreshCw className="h-3 w-3" />
+                  ) : (
+                    <Lightbulb className="h-3 w-3" />
+                  )}
+                  {suggestions.length ? "Refresh" : "Get AI Ideas"}
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-4">
-              {[
-                { step: "1", title: "Brand Setup", desc: "AI analyzes your brand from website, posts & guidelines" },
-                { step: "2", title: "Plan Content", desc: "Define post intents, platforms, and scheduling" },
-                { step: "3", title: "AI Generates", desc: "Multiple variations with self-feedback improvement" },
-                { step: "4", title: "You Refine", desc: "Select, edit, and iterate until perfect" },
-              ].map((item) => (
-                <div key={item.step} className="text-center">
-                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full gradient-primary text-sm font-bold text-primary-foreground">
-                    {item.step}
-                  </div>
-                  <h4 className="font-semibold text-sm">{item.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
-                </div>
-              ))}
-            </div>
+            {!selectedBrand && brands.length === 0 && (
+              <div className="text-center py-8">
+                <Palette className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  Set up a brand first to get AI-powered content ideas
+                </p>
+                <Button size="sm" onClick={() => navigate("/brands")} className="gap-1">
+                  <Plus className="h-3 w-3" /> Create Brand
+                </Button>
+              </div>
+            )}
+
+            {selectedBrand && suggestions.length === 0 && !loadingSuggestions && (
+              <div className="text-center py-8">
+                <Lightbulb className="h-10 w-10 mx-auto mb-3 text-amber-500 opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Click "Get AI Ideas" to receive content suggestions based on your brand, current trends, and events
+                </p>
+              </div>
+            )}
+
+            {loadingSuggestions && (
+              <div className="flex items-center justify-center py-8 gap-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">
+                  Analyzing trends, brand strategy, and current events...
+                </span>
+              </div>
+            )}
+
+            {suggestions.length > 0 && (
+              <div className="space-y-3">
+                {suggestions.map((s, i) => {
+                  const CatIcon = categoryIcons[s.category] || Zap;
+                  return (
+                    <div
+                      key={i}
+                      className="group flex items-start gap-3 rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm"
+                    >
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <CatIcon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h4 className="text-sm font-semibold">{s.title}</h4>
+                          <Badge variant="outline" className="text-[10px]">
+                            {s.platform}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${urgencyColors[s.urgency] || ""}`}
+                          >
+                            {s.urgency.replace("_", " ")}
+                          </Badge>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {categoryLabels[s.category] || s.category}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {s.reasoning}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs h-7 px-2"
+                          onClick={() => handleAddToPlan(s)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Plan
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="text-xs h-7 px-2 gradient-primary"
+                          onClick={() => handleUseSuggestion(s)}
+                        >
+                          <PenTool className="h-3 w-3 mr-1" /> Generate
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
