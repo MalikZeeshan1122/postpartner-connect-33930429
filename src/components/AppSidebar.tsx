@@ -15,11 +15,13 @@ import {
   HelpCircle,
   Moon,
   Sun,
+  Clock,
 } from "lucide-react";
 
 const mainNav = [
   { to: "/", label: "Ideas", icon: Lightbulb },
   { to: "/generate", label: "Posts", icon: PenTool },
+  { to: "/schedule", label: "Schedule", icon: Clock },
   { to: "/planner", label: "Calendar", icon: CalendarDays },
   { to: "/brands", label: "Instagram Grid", icon: LayoutGrid },
   { to: "/media", label: "Media Library", icon: ImageIcon },

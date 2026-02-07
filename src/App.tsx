@@ -9,6 +9,7 @@ import Onboarding from "./pages/Onboarding";
 import Brands from "./pages/Brands";
 import Planner from "./pages/Planner";
 import Generate from "./pages/Generate";
+import Schedule from "./pages/Schedule";
 import Settings from "./pages/Settings";
 import Media from "./pages/Media";
 import NotFound from "./pages/NotFound";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/brands" element={<Brands />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/generate" element={<Generate />} />
+          <Route path="/schedule" element={<Schedule />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/media" element={<Media />} />
           <Route path="*" element={<NotFound />} />

@@ -10,16 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, RefreshCw, MessageSquare, ImageIcon, Video } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, MessageSquare, ImageIcon, Video, Download } from "lucide-react";
 import PostPreview from "@/components/PostPreview";
 import CarouselPreview from "@/components/CarouselPreview";
 import StoryPreview from "@/components/StoryPreview";
 import VideoPreview from "@/components/VideoPreview";
 import ContentSuggestions from "@/components/ContentSuggestions";
 import LinkedInMockup, { InstagramMockup } from "@/components/PlatformMockups";
+import ScheduleDialog from "@/components/ScheduleDialog";
+import ExportPostButton from "@/components/ExportPostButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Linkedin, Instagram, Check, Eye } from "lucide-react";
+import { Linkedin, Instagram, Check, Eye, CalendarDays } from "lucide-react";
 
 const FORMAT_OPTIONS = [
   { id: "single", label: "Single Post" },
@@ -50,6 +52,7 @@ const Generate = () => {
   const [editFeedback, setEditFeedback] = useState("");
   const [iterating, setIterating] = useState(false);
   const [previewVariation, setPreviewVariation] = useState<any>(null);
+  const [scheduleVariation, setScheduleVariation] = useState<any>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -235,47 +238,104 @@ const Generate = () => {
     }
   };
 
-  const renderVariation = (v: any, i: number) => {
-    const format = v.format || "single";
+  const exportImage = (v: any) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    const size = 1080;
+    canvas.width = size;
+    canvas.height = size;
 
-    if (format === "carousel" && v.carouselSlides?.length) {
+    const draw = () => {
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.fillRect(0, 0, size, size);
+      if (v.textOverlay) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 64px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 10;
+        ctx.fillText(v.textOverlay, size / 2, size / 2);
+      }
+      const link = document.createElement("a");
+      link.download = `${v.platform}-post-${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      toast({ title: "Image exported!" });
+    };
+
+    if (v.imageUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => { ctx.drawImage(img, 0, 0, size, size); draw(); };
+      img.onerror = () => {
+        const grad = ctx.createLinearGradient(0, 0, size, size);
+        grad.addColorStop(0, "#7c3aed33");
+        grad.addColorStop(1, "#14b8a633");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+        draw();
+      };
+      img.src = v.imageUrl;
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, "#7c3aed33");
+      grad.addColorStop(1, "#14b8a633");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+      draw();
+    }
+  };
+
+  const exportCaption = (v: any) => {
+    const text = [v.caption, "", v.ctaText ? `CTA: ${v.ctaText}` : "", `Platform: ${v.platform}`].filter(Boolean).join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.download = `${v.platform}-caption-${Date.now()}.txt`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    toast({ title: "Caption exported!" });
+  };
+
+  const renderVariation = (v: any, i: number) => {
+    const fmt = v.format || "single";
+
+    if (fmt === "carousel" && v.carouselSlides?.length) {
       return (
         <div key={i} className="space-y-2">
-          <CarouselPreview
-            slides={v.carouselSlides}
-            platform={v.platform}
-            caption={v.caption}
-            brandName={selectedBrand?.name}
-          />
+          <CarouselPreview slides={v.carouselSlides} platform={v.platform} caption={v.caption} brandName={selectedBrand?.name} />
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="gap-1 flex-1" onClick={() => setPreviewVariation(v)}>
               <Eye className="h-3 w-3" /> Preview
             </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setScheduleVariation(v)}>
+              <CalendarDays className="h-3 w-3" />
+            </Button>
             <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
               <Check className="h-3 w-3" /> Approve
             </Button>
           </div>
+          <ExportPostButton variation={v} brandName={selectedBrand?.name} />
         </div>
       );
     }
 
-    if (format === "story") {
+    if (fmt === "story") {
       return (
         <div key={i} className="space-y-2">
-          <StoryPreview
-            textOverlay={v.textOverlay}
-            imageUrl={v.imageUrl}
-            brandName={selectedBrand?.name}
-            ctaText={v.ctaText}
-          />
+          <StoryPreview textOverlay={v.textOverlay} imageUrl={v.imageUrl} brandName={selectedBrand?.name} ctaText={v.ctaText} />
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="gap-1 flex-1" onClick={() => handleGenerateImage(i)}>
               <ImageIcon className="h-3 w-3" /> Image
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setScheduleVariation(v)}>
+              <CalendarDays className="h-3 w-3" />
             </Button>
             <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
               <Check className="h-3 w-3" /> Approve
             </Button>
           </div>
+          <ExportPostButton variation={v} brandName={selectedBrand?.name} />
         </div>
       );
     }
@@ -292,6 +352,9 @@ const Generate = () => {
         onApprove={() => handleSaveVariation(v, i)}
         onGenerateImage={handleGenerateImage}
         onPreview={() => setPreviewVariation(v)}
+        onSchedule={() => setScheduleVariation(v)}
+        onExportImage={() => exportImage(v)}
+        onExportCaption={() => exportCaption(v)}
       />
     );
   };
@@ -505,6 +568,16 @@ const Generate = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Schedule Dialog */}
+        {scheduleVariation && (
+          <ScheduleDialog
+            open={!!scheduleVariation}
+            onOpenChange={(open) => !open && setScheduleVariation(null)}
+            variation={scheduleVariation}
+            brandId={selectedBrand?.id}
+          />
+        )}
       </div>
     </AppLayout>
   );
