@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   startOfMonth,
   endOfMonth,
@@ -13,7 +13,7 @@ import {
   subMonths,
 } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PlanItem {
   id: string;
@@ -28,12 +28,15 @@ interface CalendarGridProps {
   items: PlanItem[];
   onDayClick?: (date: Date) => void;
   onItemClick?: (item: PlanItem) => void;
+  onItemDrop?: (itemId: string, newDate: string) => void;
 }
 
 const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-export default function CalendarGrid({ items, onDayClick, onItemClick }: CalendarGridProps) {
+export default function CalendarGrid({ items, onDayClick, onItemClick, onItemDrop }: CalendarGridProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [dragItemId, setDragItemId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -55,6 +58,44 @@ export default function CalendarGrid({ items, onDayClick, onItemClick }: Calenda
       both: "bg-primary",
     };
     return colors[platform] || "bg-primary";
+  };
+
+  const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    setDragItemId(itemId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", itemId);
+    // Make the drag image slightly transparent
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "0.5";
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDragItemId(null);
+    setDropTarget(null);
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "1";
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent, dayKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropTarget(dayKey);
+  };
+
+  const handleDragLeave = () => {
+    setDropTarget(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, day: Date) => {
+    e.preventDefault();
+    const itemId = e.dataTransfer.getData("text/plain");
+    if (itemId && onItemDrop) {
+      onItemDrop(itemId, format(day, "yyyy-MM-dd"));
+    }
+    setDragItemId(null);
+    setDropTarget(null);
   };
 
   return (
@@ -111,14 +152,19 @@ export default function CalendarGrid({ items, onDayClick, onItemClick }: Calenda
             const dayItems = getItemsForDay(day);
             const inMonth = isSameMonth(day, currentMonth);
             const today = isToday(day);
+            const dayKey = day.toISOString();
+            const isDropping = dropTarget === dayKey;
 
             return (
               <div
-                key={day.toISOString()}
+                key={dayKey}
                 className={`min-h-[100px] border-b border-r p-1.5 transition-colors cursor-pointer hover:bg-muted/30 ${
                   !inMonth ? "bg-muted/20 text-muted-foreground/50" : ""
-                }`}
+                } ${isDropping ? "bg-primary/10 ring-2 ring-inset ring-primary/40" : ""}`}
                 onClick={() => onDayClick?.(day)}
+                onDragOver={(e) => handleDragOver(e, dayKey)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, day)}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span
@@ -140,13 +186,18 @@ export default function CalendarGrid({ items, onDayClick, onItemClick }: Calenda
                   {dayItems.slice(0, 3).map((item) => (
                     <button
                       key={item.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, item.id)}
+                      onDragEnd={handleDragEnd}
                       onClick={(e) => {
                         e.stopPropagation();
                         onItemClick?.(item);
                       }}
                       className={`w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] font-medium text-white ${platformColor(
                         item.platform
-                      )} hover:opacity-80 transition-opacity`}
+                      )} hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing ${
+                        dragItemId === item.id ? "opacity-50" : ""
+                      }`}
                     >
                       {item.intent}
                     </button>
