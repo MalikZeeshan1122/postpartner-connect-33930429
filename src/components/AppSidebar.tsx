@@ -16,6 +16,8 @@ import {
   Moon,
   Sun,
   Clock,
+  BarChart3,
+  Users,
 } from "lucide-react";
 
 const mainNav = [
@@ -23,11 +25,13 @@ const mainNav = [
   { to: "/generate", label: "Posts", icon: PenTool },
   { to: "/schedule", label: "Schedule", icon: Clock },
   { to: "/planner", label: "Calendar", icon: CalendarDays },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/brands", label: "Instagram Grid", icon: LayoutGrid },
   { to: "/media", label: "Media Library", icon: ImageIcon },
 ];
 
 const toolsNav = [
+  { to: "/team", label: "Team", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
