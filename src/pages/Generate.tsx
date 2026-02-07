@@ -18,6 +18,7 @@ import VideoPreview from "@/components/VideoPreview";
 import ContentSuggestions from "@/components/ContentSuggestions";
 import LinkedInMockup, { InstagramMockup } from "@/components/PlatformMockups";
 import ScheduleDialog from "@/components/ScheduleDialog";
+import BulkScheduleDialog from "@/components/BulkScheduleDialog";
 import ExportPostButton from "@/components/ExportPostButton";
 import { useSharePost } from "@/hooks/useSharePost";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -54,6 +55,7 @@ const Generate = () => {
   const [iterating, setIterating] = useState(false);
   const [previewVariation, setPreviewVariation] = useState<any>(null);
   const [scheduleVariation, setScheduleVariation] = useState<any>(null);
+  const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false);
   const { sharePost, sharing } = useSharePost();
 
   useEffect(() => {
@@ -466,6 +468,9 @@ const Generate = () => {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-lg font-semibold">Generated Variations ({variations.length})</h2>
               <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkScheduleOpen(true)}>
+                  <CalendarDays className="h-4 w-4" /> Bulk Schedule
+                </Button>
                 <Button size="sm" variant="outline" className="gap-1" onClick={handleGenerateAllImages}>
                   <ImageIcon className="h-4 w-4" /> Generate All Images
                 </Button>
@@ -588,6 +593,14 @@ const Generate = () => {
             brandId={selectedBrand?.id}
           />
         )}
+
+        {/* Bulk Schedule Dialog */}
+        <BulkScheduleDialog
+          open={bulkScheduleOpen}
+          onOpenChange={setBulkScheduleOpen}
+          variations={variations}
+          brandId={selectedBrand?.id}
+        />
       </div>
     </AppLayout>
   );

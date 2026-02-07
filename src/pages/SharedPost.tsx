@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Linkedin, Instagram, Star, ExternalLink } from "lucide-react";
+import ShareComments from "@/components/ShareComments";
 
 const SharedPost = () => {
   const { token } = useParams<{ token: string }>();
@@ -104,6 +105,9 @@ const SharedPost = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Stakeholder Comments */}
+        <ShareComments sharedPostId={post.id} />
 
         <p className="text-center text-xs text-muted-foreground">
           Shared for stakeholder review • Powered by Lovable

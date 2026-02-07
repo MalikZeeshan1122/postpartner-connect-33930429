@@ -295,6 +295,38 @@ export type Database = {
           },
         ]
       }
+      share_comments: {
+        Row: {
+          author_name: string
+          comment: string
+          created_at: string
+          id: string
+          shared_post_id: string
+        }
+        Insert: {
+          author_name: string
+          comment: string
+          created_at?: string
+          id?: string
+          shared_post_id: string
+        }
+        Update: {
+          author_name?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          shared_post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_comments_shared_post_id_fkey"
+            columns: ["shared_post_id"]
+            isOneToOne: false
+            referencedRelation: "shared_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shared_posts: {
         Row: {
           brand_name: string | null
