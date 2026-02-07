@@ -8,6 +8,10 @@ export interface Profile {
   role: string | null;
   goal: string | null;
   onboarding_completed: boolean;
+  avatar_url: string | null;
+  notify_email_digest: boolean;
+  notify_post_reminders: boolean;
+  notify_weekly_report: boolean;
 }
 
 export function useProfile() {

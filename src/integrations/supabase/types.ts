@@ -196,27 +196,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           goal: string | null
           id: string
+          notify_email_digest: boolean
+          notify_post_reminders: boolean
+          notify_weekly_report: boolean
           onboarding_completed: boolean
           role: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           goal?: string | null
           id?: string
+          notify_email_digest?: boolean
+          notify_post_reminders?: boolean
+          notify_weekly_report?: boolean
           onboarding_completed?: boolean
           role?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           goal?: string | null
           id?: string
+          notify_email_digest?: boolean
+          notify_post_reminders?: boolean
+          notify_weekly_report?: boolean
           onboarding_completed?: boolean
           role?: string | null
           updated_at?: string
