@@ -9,8 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Check, RefreshCw, Linkedin, Instagram, MessageSquare, ImageIcon } from "lucide-react";
+import { Loader2, Sparkles, Check, RefreshCw, Linkedin, Instagram, MessageSquare, ImageIcon, Eye } from "lucide-react";
 import PostPreview from "@/components/PostPreview";
+import ContentSuggestions from "@/components/ContentSuggestions";
+import LinkedInMockup, { InstagramMockup } from "@/components/PlatformMockups";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Generate = () => {
   const { user, loading: authLoading } = useAuth();
@@ -31,6 +35,7 @@ const Generate = () => {
   const [selectedVariation, setSelectedVariation] = useState<number | null>(null);
   const [editFeedback, setEditFeedback] = useState("");
   const [iterating, setIterating] = useState(false);
+  const [previewVariation, setPreviewVariation] = useState<any>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -262,6 +267,16 @@ const Generate = () => {
           </CardContent>
         </Card>
 
+        {/* AI Content Suggestions */}
+        <ContentSuggestions
+          brand={selectedBrand}
+          onUseSuggestion={(suggestedIntent, suggestedPlatform) => {
+            setIntent(suggestedIntent);
+            setPlatform(suggestedPlatform);
+            toast({ title: "Suggestion applied! Click Generate to create posts." });
+          }}
+        />
+
         {/* Variations */}
         {variations.length > 0 && (
           <div className="space-y-4">
@@ -287,6 +302,7 @@ const Generate = () => {
                   onSelect={() => setSelectedVariation(i)}
                   onApprove={() => handleSaveVariation(v, i)}
                   onGenerateImage={handleGenerateImage}
+                  onPreview={() => setPreviewVariation(v)}
                 />
               ))}
             </div>
@@ -326,6 +342,43 @@ const Generate = () => {
             </Card>
           </div>
         )}
+
+        {/* Platform Preview Dialog */}
+        <Dialog open={!!previewVariation} onOpenChange={(open) => !open && setPreviewVariation(null)}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Platform Preview</DialogTitle>
+            </DialogHeader>
+            {previewVariation && (
+              <Tabs defaultValue={previewVariation.platform === "instagram" ? "instagram" : "linkedin"}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="linkedin" className="gap-1">
+                    <Linkedin className="h-3 w-3" /> LinkedIn
+                  </TabsTrigger>
+                  <TabsTrigger value="instagram" className="gap-1">
+                    <Instagram className="h-3 w-3" /> Instagram
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="linkedin">
+                  <LinkedInMockup
+                    caption={previewVariation.caption}
+                    textOverlay={previewVariation.textOverlay}
+                    imageUrl={previewVariation.imageUrl}
+                    brandName={selectedBrand?.name}
+                  />
+                </TabsContent>
+                <TabsContent value="instagram">
+                  <InstagramMockup
+                    caption={previewVariation.caption}
+                    textOverlay={previewVariation.textOverlay}
+                    imageUrl={previewVariation.imageUrl}
+                    brandName={selectedBrand?.name}
+                  />
+                </TabsContent>
+              </Tabs>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
