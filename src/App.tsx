@@ -9,6 +9,7 @@ import Onboarding from "./pages/Onboarding";
 import Brands from "./pages/Brands";
 import Planner from "./pages/Planner";
 import Generate from "./pages/Generate";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/brands" element={<Brands />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/generate" element={<Generate />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -9,6 +9,7 @@ import {
   CalendarDays,
   PenTool,
   LogOut,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { to: "/brands", label: "Brands", icon: Palette },
   { to: "/planner", label: "Content Planner", icon: CalendarDays },
   { to: "/generate", label: "Generate Posts", icon: PenTool },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
