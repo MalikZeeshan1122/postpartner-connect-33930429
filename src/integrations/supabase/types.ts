@@ -295,6 +295,54 @@ export type Database = {
           },
         ]
       }
+      shared_posts: {
+        Row: {
+          brand_name: string | null
+          caption: string
+          created_at: string
+          cta_text: string | null
+          feedback_notes: string | null
+          feedback_score: number | null
+          format: string
+          id: string
+          image_url: string | null
+          platform: string
+          share_token: string
+          text_overlay: string | null
+          user_id: string
+        }
+        Insert: {
+          brand_name?: string | null
+          caption: string
+          created_at?: string
+          cta_text?: string | null
+          feedback_notes?: string | null
+          feedback_score?: number | null
+          format?: string
+          id?: string
+          image_url?: string | null
+          platform: string
+          share_token?: string
+          text_overlay?: string | null
+          user_id: string
+        }
+        Update: {
+          brand_name?: string | null
+          caption?: string
+          created_at?: string
+          cta_text?: string | null
+          feedback_notes?: string | null
+          feedback_score?: number | null
+          format?: string
+          id?: string
+          image_url?: string | null
+          platform?: string
+          share_token?: string
+          text_overlay?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_connections: {
         Row: {
           account_name: string | null

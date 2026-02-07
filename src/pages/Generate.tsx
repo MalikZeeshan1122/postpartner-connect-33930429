@@ -19,9 +19,10 @@ import ContentSuggestions from "@/components/ContentSuggestions";
 import LinkedInMockup, { InstagramMockup } from "@/components/PlatformMockups";
 import ScheduleDialog from "@/components/ScheduleDialog";
 import ExportPostButton from "@/components/ExportPostButton";
+import { useSharePost } from "@/hooks/useSharePost";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Linkedin, Instagram, Check, Eye, CalendarDays } from "lucide-react";
+import { Linkedin, Instagram, Check, Eye, CalendarDays, Share2 } from "lucide-react";
 
 const FORMAT_OPTIONS = [
   { id: "single", label: "Single Post" },
@@ -53,6 +54,7 @@ const Generate = () => {
   const [iterating, setIterating] = useState(false);
   const [previewVariation, setPreviewVariation] = useState<any>(null);
   const [scheduleVariation, setScheduleVariation] = useState<any>(null);
+  const { sharePost, sharing } = useSharePost();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -311,6 +313,9 @@ const Generate = () => {
             <Button size="sm" variant="outline" className="gap-1" onClick={() => setScheduleVariation(v)}>
               <CalendarDays className="h-3 w-3" />
             </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => sharePost(v, { brandName: selectedBrand?.name })} disabled={sharing}>
+              {sharing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+            </Button>
             <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
               <Check className="h-3 w-3" /> Approve
             </Button>
@@ -330,6 +335,9 @@ const Generate = () => {
             </Button>
             <Button size="sm" variant="outline" className="gap-1" onClick={() => setScheduleVariation(v)}>
               <CalendarDays className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => sharePost(v, { brandName: selectedBrand?.name })} disabled={sharing}>
+              {sharing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
             </Button>
             <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
               <Check className="h-3 w-3" /> Approve
@@ -353,6 +361,8 @@ const Generate = () => {
         onGenerateImage={handleGenerateImage}
         onPreview={() => setPreviewVariation(v)}
         onSchedule={() => setScheduleVariation(v)}
+        onShare={() => sharePost(v, { brandName: selectedBrand?.name, feedbackScore: feedback[i]?.score, feedbackNotes: feedback[i]?.feedback })}
+        sharing={sharing}
         onExportImage={() => exportImage(v)}
         onExportCaption={() => exportCaption(v)}
       />
