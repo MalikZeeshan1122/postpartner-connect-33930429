@@ -21,11 +21,13 @@ const Generate = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const itemId = searchParams.get("itemId");
+  const urlIntent = searchParams.get("intent");
+  const urlPlatform = searchParams.get("platform");
 
   const [brands, setBrands] = useState<any[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<any>(null);
-  const [intent, setIntent] = useState("");
-  const [platform, setPlatform] = useState("both");
+  const [intent, setIntent] = useState(urlIntent || "");
+  const [platform, setPlatform] = useState(urlPlatform || "both");
   const [tone, setTone] = useState("");
   const [cta, setCta] = useState("");
   const [extraContext, setExtraContext] = useState("");

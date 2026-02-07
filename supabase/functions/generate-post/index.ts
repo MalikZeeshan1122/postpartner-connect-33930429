@@ -188,7 +188,7 @@ ${JSON.stringify(variations.variations, null, 2)}`;
         const reviews = JSON.parse(fbToolCall.function.arguments);
         feedbackData = reviews.reviews || [];
 
-        // Apply improvements from feedback
+        // Apply improvements from first feedback round
         finalVariations = finalVariations.map((v: any, i: number) => {
           const review = feedbackData.find((r: any) => r.index === i);
           if (review && review.score < 8) {
@@ -200,7 +200,96 @@ ${JSON.stringify(variations.variations, null, 2)}`;
           }
           return v;
         });
-        console.log("Self-feedback applied, improved variations");
+        console.log("Round 1 self-feedback applied");
+
+        // --- Round 2: Second self-feedback iteration ---
+        const needsRound2 = feedbackData.some((r: any) => r.score < 7);
+        if (needsRound2) {
+          console.log("Running round 2 self-feedback (some scores < 7)...");
+          const round2Prompt = `These posts were already improved once but some still score below 7. Do a final polish pass focusing on brand voice consistency, mobile readability, and CTA clarity.
+
+Posts:
+${JSON.stringify(finalVariations, null, 2)}
+
+Original brand voice: ${JSON.stringify(brandVoice || {})}`;
+
+          const round2Response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-3-flash-preview",
+              messages: [
+                { role: "system", content: "You are a senior social media editor doing a final quality pass. Be concise." },
+                { role: "user", content: round2Prompt },
+              ],
+              tools: [{
+                type: "function",
+                function: {
+                  name: "review_posts",
+                  description: "Final review and polish of post variations",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      reviews: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            index: { type: "number" },
+                            score: { type: "number" },
+                            feedback: { type: "string" },
+                            improvedCaption: { type: "string" },
+                            improvedTextOverlay: { type: "string" },
+                          },
+                          required: ["index", "score", "feedback", "improvedCaption", "improvedTextOverlay"],
+                          additionalProperties: false,
+                        },
+                      },
+                    },
+                    required: ["reviews"],
+                    additionalProperties: false,
+                  },
+                },
+              }],
+              tool_choice: { type: "function", function: { name: "review_posts" } },
+            }),
+          });
+
+          if (round2Response.ok) {
+            const r2Result = await round2Response.json();
+            const r2ToolCall = r2Result.choices?.[0]?.message?.tool_calls?.[0];
+            if (r2ToolCall) {
+              const r2Reviews = JSON.parse(r2ToolCall.function.arguments);
+              const r2Data = r2Reviews.reviews || [];
+
+              finalVariations = finalVariations.map((v: any, i: number) => {
+                const review = r2Data.find((r: any) => r.index === i);
+                if (review && review.improvedCaption) {
+                  return {
+                    ...v,
+                    caption: review.improvedCaption,
+                    textOverlay: review.improvedTextOverlay || v.textOverlay,
+                  };
+                }
+                return v;
+              });
+
+              // Merge round 2 feedback with round 1
+              feedbackData = feedbackData.map((fb: any) => {
+                const r2 = r2Data.find((r: any) => r.index === fb.index);
+                if (r2) {
+                  return { ...fb, score: r2.score, feedback: `${fb.feedback} → Final: ${r2.feedback}` };
+                }
+                return fb;
+              });
+
+              console.log("Round 2 self-feedback applied");
+            }
+          }
+        }
       }
     }
 
