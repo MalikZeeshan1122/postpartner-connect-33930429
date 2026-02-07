@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { socialIcons } from "@/components/icons/SocialIcons";
 import {
   Dialog,
   DialogContent,
@@ -70,9 +71,10 @@ export default function SocialConnectDialog({
             <div
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${platform.color}`}
             >
-              <span className="text-lg font-bold text-white">
-                {platform.platform[0].toUpperCase()}
-              </span>
+              {socialIcons[platform.platform]
+                ? socialIcons[platform.platform]({ className: "h-5 w-5 text-white" })
+                : <span className="text-lg font-bold text-white">{platform.platform[0].toUpperCase()}</span>
+              }
             </div>
             <div>
               <DialogTitle>Connect {platform.label}</DialogTitle>

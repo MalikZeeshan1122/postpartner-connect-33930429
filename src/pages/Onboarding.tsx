@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import SocialConnectDialog from "@/components/SocialConnectDialog";
+import { socialIcons } from "@/components/icons/SocialIcons";
 import {
   Sparkles,
   Briefcase,
@@ -297,7 +298,10 @@ export default function Onboarding() {
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${social.color} cursor-pointer`}
                           onClick={() => !connected && openConnect(social)}
                         >
-                          <span className="text-sm font-bold text-white">{social.platform[0].toUpperCase()}</span>
+                          {socialIcons[social.platform]
+                            ? socialIcons[social.platform]({ className: "h-5 w-5 text-white" })
+                            : <span className="text-sm font-bold text-white">{social.platform[0].toUpperCase()}</span>
+                          }
                         </div>
                         <div className="flex-1 min-w-0" onClick={() => !connected && openConnect(social)} role="button">
                           <p className="text-sm font-medium truncate">{social.label}</p>
