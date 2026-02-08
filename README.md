@@ -171,6 +171,11 @@ The app uses 12 Supabase tables:
 - `team_invitations` — Team member invitations
 - `user_roles` — Team member roles and permissions
 
+## Author
+
+**Muhammad Zeeshan**
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Muhammad_Zeeshan-blue?logo=linkedin)](https://www.linkedin.com/in/muhammadzeeshan007/)
+
 ## License
 
 This project is private. All rights reserved.
