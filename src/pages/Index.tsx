@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
@@ -21,14 +22,13 @@ import {
   Clock,
   TrendingUp,
   Megaphone,
-  Sparkles,
-  ArrowRight,
-  CalendarDays,
   PenTool,
-  Palette,
   Plus,
   RefreshCw,
 } from "lucide-react";
+import DashboardHero from "@/components/dashboard/DashboardHero";
+import DashboardStats from "@/components/dashboard/DashboardStats";
+import QuickActions from "@/components/dashboard/QuickActions";
 
 interface Suggestion {
   title: string;
@@ -99,7 +99,6 @@ const Dashboard = () => {
       supabase.from("brands").select("id", { count: "exact", head: true }),
     ]);
 
-    // Scheduled this week
     const now = new Date();
     const weekEnd = new Date(now);
     weekEnd.setDate(weekEnd.getDate() + 7);
@@ -151,7 +150,6 @@ const Dashboard = () => {
   };
 
   const handleAddToPlan = async (suggestion: Suggestion) => {
-    // Get first plan or create one
     const { data: plans } = await supabase
       .from("content_plans")
       .select("id")
@@ -189,220 +187,176 @@ const Dashboard = () => {
   return (
     <AppLayout>
       <div className="mx-auto max-w-5xl space-y-6">
-        {/* Hero */}
-        <div className="rounded-2xl gradient-primary p-6 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-2">
-            <Sparkles className="h-7 w-7" />
-            <h1 className="text-2xl font-bold">PostPartner AI</h1>
-          </div>
-          <p className="text-sm opacity-90 max-w-xl">
-            Your AI companion for creating on-brand social media content. From brand
-            analysis to published posts — at machine speed.
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "Total Posts", value: stats.totalPosts, icon: PenTool },
-            { label: "Approved", value: stats.approvedPosts, icon: Sparkles },
-            { label: "This Week", value: stats.scheduledThisWeek, icon: CalendarDays },
-            { label: "Brands", value: stats.brands, icon: Palette },
-          ].map(({ label, value, icon: Icon }) => (
-            <Card key={label}>
-              <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{value}</p>
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Quick actions */}
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Card
-            className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-0.5"
-            onClick={() => navigate("/brands")}
-          >
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Palette className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm">Setup Brand</p>
-                <p className="text-xs text-muted-foreground">AI analyzes your brand</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-          <Card
-            className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-0.5"
-            onClick={() => navigate("/planner")}
-          >
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/20">
-                <CalendarDays className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm">Plan Content</p>
-                <p className="text-xs text-muted-foreground">Calendar & scheduling</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-          <Card
-            className="cursor-pointer transition-all hover:shadow-glow hover:-translate-y-0.5"
-            onClick={() => navigate("/generate")}
-          >
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <PenTool className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm">Generate Posts</p>
-                <p className="text-xs text-muted-foreground">AI-powered creation</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardHero />
+        <DashboardStats stats={stats} />
+        <QuickActions />
 
         {/* AI Content Suggestions */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-amber-500" />
-                AI Content Ideas
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                {brands.length > 1 && (
-                  <Select
-                    value={selectedBrand?.id || ""}
-                    onValueChange={(v) => setSelectedBrand(brands.find((b) => b.id === v))}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ rotate: [0, 15, -15, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <SelectTrigger className="w-36 h-8 text-xs">
-                      <SelectValue placeholder="Brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <Button
-                  size="sm"
-                  onClick={fetchSuggestions}
-                  disabled={loadingSuggestions || !selectedBrand}
-                  className="gap-1"
-                >
-                  {loadingSuggestions ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : suggestions.length ? (
-                    <RefreshCw className="h-3 w-3" />
-                  ) : (
-                    <Lightbulb className="h-3 w-3" />
-                  )}
-                  {suggestions.length ? "Refresh" : "Get AI Ideas"}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!selectedBrand && brands.length === 0 && (
-              <div className="text-center py-8">
-                <Palette className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-sm text-muted-foreground mb-3">
-                  Set up a brand first to get AI-powered content ideas
-                </p>
-                <Button size="sm" onClick={() => navigate("/brands")} className="gap-1">
-                  <Plus className="h-3 w-3" /> Create Brand
-                </Button>
-              </div>
-            )}
-
-            {selectedBrand && suggestions.length === 0 && !loadingSuggestions && (
-              <div className="text-center py-8">
-                <Lightbulb className="h-10 w-10 mx-auto mb-3 text-amber-500 opacity-50" />
-                <p className="text-sm text-muted-foreground">
-                  Click "Get AI Ideas" to receive content suggestions based on your brand, current trends, and events
-                </p>
-              </div>
-            )}
-
-            {loadingSuggestions && (
-              <div className="flex items-center justify-center py-8 gap-2">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">
-                  Analyzing trends, brand strategy, and current events...
-                </span>
-              </div>
-            )}
-
-            {suggestions.length > 0 && (
-              <div className="space-y-3">
-                {suggestions.map((s, i) => {
-                  const CatIcon = categoryIcons[s.category] || Zap;
-                  return (
-                    <div
-                      key={i}
-                      className="group flex items-start gap-3 rounded-lg border p-3 transition-all hover:bg-muted/50 hover:shadow-sm"
+                    <Lightbulb className="h-5 w-5 text-amber-500" />
+                  </motion.div>
+                  AI Content Ideas
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {brands.length > 1 && (
+                    <Select
+                      value={selectedBrand?.id || ""}
+                      onValueChange={(v) => setSelectedBrand(brands.find((b) => b.id === v))}
                     >
-                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <CatIcon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h4 className="text-sm font-semibold">{s.title}</h4>
-                          <Badge variant="outline" className="text-[10px]">
-                            {s.platform}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${urgencyColors[s.urgency] || ""}`}
-                          >
-                            {s.urgency.replace("_", " ")}
-                          </Badge>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {categoryLabels[s.category] || s.category}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {s.reasoning}
-                        </p>
-                      </div>
-                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs h-7 px-2"
-                          onClick={() => handleAddToPlan(s)}
-                        >
-                          <Plus className="h-3 w-3 mr-1" /> Plan
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="text-xs h-7 px-2 gradient-primary"
-                          onClick={() => handleUseSuggestion(s)}
-                        >
-                          <PenTool className="h-3 w-3 mr-1" /> Generate
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+                      <SelectTrigger className="w-36 h-8 text-xs">
+                        <SelectValue placeholder="Brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={fetchSuggestions}
+                    disabled={loadingSuggestions || !selectedBrand}
+                    className="gap-1 gradient-primary text-primary-foreground"
+                  >
+                    {loadingSuggestions ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : suggestions.length ? (
+                      <RefreshCw className="h-3 w-3" />
+                    ) : (
+                      <Lightbulb className="h-3 w-3" />
+                    )}
+                    {suggestions.length ? "Refresh" : "Get AI Ideas"}
+                  </Button>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {!selectedBrand && brands.length === 0 && (
+                <div className="text-center py-10">
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="inline-block mb-4"
+                  >
+                    <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/10">
+                      <Lightbulb className="h-8 w-8 text-primary" />
+                    </div>
+                  </motion.div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Set up a brand first to get AI-powered content ideas
+                  </p>
+                  <Button size="sm" onClick={() => navigate("/brands")} className="gap-1 gradient-primary text-primary-foreground">
+                    <Plus className="h-3 w-3" /> Create Brand
+                  </Button>
+                </div>
+              )}
+
+              {selectedBrand && suggestions.length === 0 && !loadingSuggestions && (
+                <div className="text-center py-10">
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="inline-block mb-4"
+                  >
+                    <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-amber-500/10">
+                      <Lightbulb className="h-8 w-8 text-amber-500" />
+                    </div>
+                  </motion.div>
+                  <p className="text-sm text-muted-foreground">
+                    Click <span className="font-semibold text-foreground">"Get AI Ideas"</span> to receive content suggestions based on your brand and current trends
+                  </p>
+                </div>
+              )}
+
+              {loadingSuggestions && (
+                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Loader2 className="h-8 w-8 text-primary" />
+                  </motion.div>
+                  <span className="text-sm text-muted-foreground">
+                    Analyzing trends, brand strategy, and current events...
+                  </span>
+                </div>
+              )}
+
+              {suggestions.length > 0 && (
+                <div className="space-y-2">
+                  {suggestions.map((s, i) => {
+                    const CatIcon = categoryIcons[s.category] || Zap;
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.06 }}
+                        className="group flex items-start gap-3 rounded-xl border p-3 transition-all hover:bg-muted/50 hover:shadow-glow hover:-translate-y-0.5 duration-200"
+                      >
+                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <CatIcon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="text-sm font-semibold">{s.title}</h4>
+                            <Badge variant="outline" className="text-[10px]">
+                              {s.platform}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] ${urgencyColors[s.urgency] || ""}`}
+                            >
+                              {s.urgency.replace("_", " ")}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {categoryLabels[s.category] || s.category}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {s.reasoning}
+                          </p>
+                        </div>
+                        <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs h-7 px-2"
+                            onClick={() => handleAddToPlan(s)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Plan
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="text-xs h-7 px-2 gradient-primary text-primary-foreground"
+                            onClick={() => handleUseSuggestion(s)}
+                          >
+                            <PenTool className="h-3 w-3 mr-1" /> Generate
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </AppLayout>
   );
