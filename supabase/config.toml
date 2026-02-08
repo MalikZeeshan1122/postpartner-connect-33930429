@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.generate-video]
 verify_jwt = false
+
+[functions.notify-comment]
+verify_jwt = false
+
+[functions.auto-publish]
+verify_jwt = false
