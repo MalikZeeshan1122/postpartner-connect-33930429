@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Video, Loader2, Play } from "lucide-react";
+import { Sparkles, Loader2, ImageIcon } from "lucide-react";
 
 interface VideoPreviewProps {
   imageUrl?: string;
@@ -29,42 +29,41 @@ export default function VideoPreview({ imageUrl, videoUrl, textOverlay, platform
     <Card className="overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 border-b">
         <Badge variant="secondary" className="gap-1">
-          <Video className="h-3 w-3" />
-          {platform} video
+          <Sparkles className="h-3 w-3" />
+          {platform} cinematic
         </Badge>
-        <span className="text-[10px] text-muted-foreground ml-auto">5s animated</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">AI-styled image</span>
       </div>
 
       <div className="relative aspect-square overflow-hidden">
         {videoUrl ? (
-          <video
+          <img
             src={videoUrl}
+            alt="AI-styled cinematic post"
             className="h-full w-full object-cover"
-            autoPlay
-            loop
-            muted
-            playsInline
           />
         ) : imageUrl ? (
           <>
-            <img src={imageUrl} alt="Video source" className="h-full w-full object-cover" />
+            <img src={imageUrl} alt="Source image" className="h-full w-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <div className="rounded-full bg-card/80 p-3 backdrop-blur-sm">
-                <Play className="h-8 w-8 text-foreground" />
+                <Sparkles className="h-8 w-8 text-foreground" />
               </div>
             </div>
           </>
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 flex items-center justify-center">
-            <Video className="h-12 w-12 text-muted-foreground/30" />
+            <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
           </div>
         )}
 
-        <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-          <p className="text-center text-xl font-bold leading-tight text-primary-foreground drop-shadow-lg">
-            {textOverlay}
-          </p>
-        </div>
+        {!videoUrl && (
+          <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
+            <p className="text-center text-xl font-bold leading-tight text-primary-foreground drop-shadow-lg">
+              {textOverlay}
+            </p>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-3">
@@ -77,14 +76,14 @@ export default function VideoPreview({ imageUrl, videoUrl, textOverlay, platform
             disabled={generating}
           >
             {generating ? (
-              <><Loader2 className="h-3 w-3 animate-spin" /> Generating video...</>
+              <><Loader2 className="h-3 w-3 animate-spin" /> Generating...</>
             ) : (
-              <><Video className="h-3 w-3" /> Generate 5s Video</>
+              <><Sparkles className="h-3 w-3" /> Generate Cinematic Style</>
             )}
           </Button>
         )}
         {videoUrl && (
-          <p className="text-xs text-muted-foreground text-center">Video generated ✓</p>
+          <p className="text-xs text-muted-foreground text-center">Cinematic image generated ✓</p>
         )}
       </CardContent>
     </Card>
