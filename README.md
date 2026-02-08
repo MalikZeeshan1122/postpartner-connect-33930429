@@ -1,73 +1,176 @@
-# Welcome to your Lovable project
+# PostPartner AI
 
-## Project info
+AI-powered social media content creation, scheduling, and analytics platform.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![React](https://img.shields.io/badge/React-18-blue?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Vite](https://img.shields.io/badge/Vite-5-purple?logo=vite)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-blue?logo=tailwindcss)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-green?logo=supabase)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Overview
 
-**Use Lovable**
+PostPartner AI is a full-stack social media management tool that helps creators, marketers, and agencies generate on-brand content at scale. It combines AI-powered post generation with scheduling, analytics, team collaboration, and multi-platform publishing.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- **AI Content Generation** — Generate captions, carousels, stories, and video content with AI tailored to your brand voice
+- **Brand Analysis** — AI-powered brand voice extraction from any website URL
+- **Multi-Platform Support** — Instagram, LinkedIn, Facebook, Twitter/X, TikTok, YouTube, Pinterest, Threads, BlueSky
+- **Content Calendar** — Visual planner with drag-and-drop scheduling
+- **Bulk Scheduling** — Schedule multiple posts across optimal time slots
+- **Post Previews** — Live mockups for each platform (feed, story, carousel, video)
+- **Analytics Dashboard** — Track views, clicks, likes, comments, shares, and engagement rates
+- **Team Collaboration** — Invite team members, assign roles, share posts for approval
+- **Media Library** — Upload and manage images/videos with Supabase storage
+- **Dark Mode** — Full dark/light theme support
+- **AI Content Suggestions** — Get trending content ideas based on your brand and industry
+- **Export & Share** — Export posts as images, copy captions, share review links
 
-**Use your preferred IDE**
+## Tech Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite |
+| Styling | Tailwind CSS, shadcn/ui, Framer Motion |
+| Backend | Supabase (PostgreSQL, Auth, Storage, Edge Functions) |
+| AI | OpenAI via Supabase Edge Functions |
+| Charts | Recharts |
+| Routing | React Router DOM v6 |
+| State | TanStack React Query |
+| Forms | React Hook Form + Zod |
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Project Structure
 
-Follow these steps:
+```
+src/
+├── components/
+│   ├── dashboard/          # Dashboard widgets (Hero, Stats, QuickActions, ConnectedAccounts)
+│   ├── icons/              # Social platform SVG icons
+│   ├── schedule/           # Schedule calendar & timeline views
+│   ├── ui/                 # shadcn/ui primitives (48 components)
+│   ├── AppLayout.tsx       # Main layout with sidebar + mobile nav
+│   ├── AppSidebar.tsx      # Desktop sidebar navigation
+│   ├── BulkScheduleDialog.tsx
+│   ├── CalendarGrid.tsx
+│   ├── CarouselPreview.tsx
+│   ├── ContentSuggestions.tsx
+│   ├── ExportPostButton.tsx
+│   ├── PlatformMockups.tsx
+│   ├── PostPreview.tsx
+│   ├── ScheduleDialog.tsx
+│   ├── ShareComments.tsx
+│   ├── SocialConnectDialog.tsx
+│   ├── StoryPreview.tsx
+│   └── VideoPreview.tsx
+├── hooks/
+│   ├── useAuth.ts          # Authentication hook
+│   ├── useProfile.ts       # User profile management
+│   ├── useSharePost.ts     # Post sharing functionality
+│   ├── use-mobile.tsx      # Mobile detection
+│   └── use-toast.ts        # Toast notifications
+├── integrations/
+│   └── supabase/
+│       ├── client.ts       # Supabase client config
+│       └── types.ts        # Auto-generated DB types
+├── pages/
+│   ├── Index.tsx           # Dashboard
+│   ├── Auth.tsx            # Sign in / Sign up
+│   ├── Onboarding.tsx      # New user onboarding flow
+│   ├── Brands.tsx          # Brand management
+│   ├── Generate.tsx        # AI post generation
+│   ├── Planner.tsx         # Content calendar
+│   ├── Schedule.tsx        # Post scheduling
+│   ├── Analytics.tsx       # Performance analytics
+│   ├── Media.tsx           # Media library
+│   ├── Team.tsx            # Team management
+│   ├── Settings.tsx        # User settings & social connections
+│   ├── SharedPost.tsx      # Public shared post view
+│   └── NotFound.tsx        # 404 page
+├── lib/
+│   └── utils.ts            # Utility functions (cn)
+├── App.tsx                 # Root component with routes
+├── main.tsx                # Entry point
+└── index.css               # Global styles & CSS variables
+supabase/
+├── config.toml             # Supabase project config
+├── functions/              # Edge functions
+│   ├── analyze-brand/      # AI brand analysis
+│   ├── auto-publish/       # Auto-publish scheduled posts
+│   ├── generate-image/     # AI image generation
+│   ├── generate-post/      # AI post content generation
+│   ├── generate-video/     # AI video/animation generation
+│   ├── linkedin-oauth/     # LinkedIn OAuth helper
+│   ├── notify-comment/     # Comment notification emails
+│   └── suggest-content/    # AI content suggestions
+└── migrations/             # SQL migrations (10 files)
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
 
-# Step 3: Install the necessary dependencies.
-npm i
+- [Node.js](https://nodejs.org/) v18+ and npm
+- A [Supabase](https://supabase.com/) project (for backend)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/MalikZeeshan1122/postpartner-connect-33930429.git
+
+# Navigate to the project
+cd postpartner-connect-33930429
+
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Environment Variables
 
-**Use GitHub Codespaces**
+Create a `.env` file in the root with your Supabase credentials:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+VITE_SUPABASE_PROJECT_ID=your-project-id
+```
 
-## What technologies are used for this project?
+## Available Scripts
 
-This project is built with:
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run tests with Vitest |
+| `npm run test:watch` | Run tests in watch mode |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Database Schema
 
-## How can I deploy this project?
+The app uses 12 Supabase tables:
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- `profiles` — User profiles (role, goal, avatar, notification preferences)
+- `brands` — Brand configurations with AI-extracted voice
+- `content_plans` — Content planning containers
+- `plan_items` — Individual content plan entries
+- `post_variations` — AI-generated post variations
+- `scheduled_posts` — Posts scheduled for publishing
+- `post_analytics` — Performance tracking metrics
+- `shared_posts` — Posts shared for team review
+- `share_comments` — Comments on shared posts
+- `social_connections` — Connected social media accounts
+- `team_invitations` — Team member invitations
+- `user_roles` — Team member roles and permissions
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is private. All rights reserved.

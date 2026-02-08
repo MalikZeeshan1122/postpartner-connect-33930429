@@ -68,17 +68,19 @@ export default function ConnectedAccounts() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.35 }}
     >
-      <Card>
+      <Card className="border-border/60">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Link2 className="h-4 w-4 text-primary" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                <Link2 className="h-3.5 w-3.5 text-primary" />
+              </div>
               Connected Accounts
             </CardTitle>
             <Button
               size="sm"
               variant="ghost"
-              className="text-xs h-7 gap-1"
+              className="text-xs h-7 gap-1 text-muted-foreground hover:text-foreground"
               onClick={() => navigate("/settings")}
             >
               <Plus className="h-3 w-3" /> Manage
@@ -87,25 +89,24 @@ export default function ConnectedAccounts() {
         </CardHeader>
         <CardContent>
           {connections.length === 0 ? (
-            <div className="text-center py-6">
-              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl bg-muted mb-3">
-                <Link2 className="h-5 w-5 text-muted-foreground" />
+            <div className="text-center py-8">
+              <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-muted mb-4">
+                <Link2 className="h-6 w-6 text-muted-foreground/50" />
               </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                No accounts connected yet
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">No accounts connected yet</p>
+              <p className="text-xs text-muted-foreground/70 mb-4">Connect your social accounts to start publishing</p>
               <Button
                 size="sm"
                 onClick={() => navigate("/settings")}
-                className="gap-1 gradient-primary text-primary-foreground"
+                className="gap-1.5 gradient-primary text-white"
               >
-                <Plus className="h-3 w-3" /> Connect Account
+                <Plus className="h-3.5 w-3.5" /> Connect Account
               </Button>
             </div>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {connections.map((conn, i) => {
-                const icon = socialIcons[conn.platform];
+                const IconComp = socialIcons[conn.platform];
                 const color = platformColors[conn.platform] || "from-gray-500 to-gray-400";
                 return (
                   <motion.div
@@ -113,13 +114,13 @@ export default function ConnectedAccounts() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 rounded-xl border border-border/60 p-3 hover:bg-muted/40 transition-colors"
                   >
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${color}`}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${color} shadow-sm`}
                     >
-                      {icon
-                        ? icon({ className: "h-4 w-4 text-white" })
+                      {IconComp
+                        ? IconComp({ className: "h-4 w-4 text-white" })
                         : <span className="text-xs font-bold text-white">
                             {conn.platform[0].toUpperCase()}
                           </span>
@@ -130,12 +131,12 @@ export default function ConnectedAccounts() {
                         {platformLabels[conn.platform] || conn.platform}
                       </p>
                       {conn.account_name && (
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-[11px] text-muted-foreground truncate">
                           {conn.account_name}
                         </p>
                       )}
                     </div>
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                   </motion.div>
                 );
               })}

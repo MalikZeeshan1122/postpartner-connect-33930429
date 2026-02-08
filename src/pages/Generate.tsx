@@ -423,7 +423,7 @@ const Generate = () => {
         onGenerateImage={handleGenerateImage}
         onPreview={() => setPreviewVariation(v)}
         onSchedule={() => setScheduleVariation(v)}
-        onShare={() => sharePost(v, { brandName: selectedBrand?.name, feedbackScore: feedback[i]?.score, feedbackNotes: feedback[i]?.feedback })}
+        onShare={() => sharePost(v, { brandName: selectedBrand?.name, feedbackScore: feedback[i]?.score, feedbackNotes: typeof feedback[i]?.feedback === 'string' ? feedback[i].feedback : JSON.stringify(feedback[i]?.feedback || '') })}
         sharing={sharing}
         onExportImage={() => exportImage(v)}
         onExportCaption={() => exportCaption(v)}

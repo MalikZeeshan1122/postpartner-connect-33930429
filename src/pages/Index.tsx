@@ -187,7 +187,7 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-5 animate-fade-in">
         <DashboardHero />
         <DashboardStats stats={stats} />
         <QuickActions />
@@ -199,7 +199,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden border-border/60">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
@@ -309,7 +309,7 @@ const Dashboard = () => {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.06 }}
-                        className="group flex items-start gap-3 rounded-xl border p-3 transition-all hover:bg-muted/50 hover:shadow-glow hover:-translate-y-0.5 duration-200"
+                        className="group flex items-start gap-3 rounded-xl border border-border/60 p-3 transition-all hover:bg-muted/40 hover:shadow-glow hover:-translate-y-0.5 duration-200"
                       >
                         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
                           <CatIcon className="h-4 w-4 text-primary" />
