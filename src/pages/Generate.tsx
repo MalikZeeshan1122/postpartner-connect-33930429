@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, RefreshCw, MessageSquare, ImageIcon, Video, Download } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, MessageSquare, ImageIcon, Video, Download, Send } from "lucide-react";
 import PostPreview from "@/components/PostPreview";
 import CarouselPreview from "@/components/CarouselPreview";
 import StoryPreview from "@/components/StoryPreview";
@@ -61,6 +61,7 @@ const Generate = () => {
   const [scheduleVariation, setScheduleVariation] = useState<any>(null);
   const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false);
   const { sharePost, sharing } = useSharePost();
+  const [publishingIndex, setPublishingIndex] = useState<number | null>(null);
 
   // Persist variations & feedback to sessionStorage
   useEffect(() => {
@@ -254,6 +255,47 @@ const Generate = () => {
     }
   };
 
+  const handlePublishNow = async (variation: any, index: number) => {
+    setPublishingIndex(index);
+    try {
+      // 1. Create a scheduled post with status 'scheduled' and scheduled_at = now
+      const { data: post, error: insertError } = await supabase.from("scheduled_posts").insert({
+        user_id: user!.id,
+        platform: variation.platform,
+        caption: variation.caption,
+        image_url: variation.imageUrl || null,
+        text_overlay: variation.textOverlay || null,
+        cta_text: variation.ctaText || null,
+        format: variation.format || "single",
+        brand_id: selectedBrand?.id || null,
+        scheduled_at: new Date().toISOString(),
+        status: "scheduled",
+      }).select().single();
+
+      if (insertError) throw insertError;
+
+      // 2. Trigger the auto-publish edge function
+      const { data: result, error: pubError } = await supabase.functions.invoke("auto-publish", {
+        body: {},
+      });
+
+      if (pubError) throw pubError;
+
+      const published = result?.results?.find((r: any) => r.id === post.id);
+      if (published?.success) {
+        toast({ title: `Published to ${variation.platform} successfully! 🎉` });
+      } else {
+        // Post was created but publish may have failed - update user
+        const errorMsg = published?.error || "Check your connected account tokens in Settings";
+        toast({ title: `Post queued but publish failed: ${errorMsg}`, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: e.message || "Publish failed", variant: "destructive" });
+    } finally {
+      setPublishingIndex(null);
+    }
+  };
+
   const exportImage = (v: any) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
@@ -333,6 +375,9 @@ const Generate = () => {
             <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
               <Check className="h-3 w-3" /> Approve
             </Button>
+            <Button size="sm" variant="default" className="gap-1" onClick={() => handlePublishNow(v, i)} disabled={publishingIndex === i}>
+              {publishingIndex === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Publish
+            </Button>
           </div>
           <ExportPostButton variation={v} brandName={selectedBrand?.name} />
         </div>
@@ -355,6 +400,9 @@ const Generate = () => {
             </Button>
             <Button size="sm" className="gap-1 flex-1 gradient-primary" onClick={() => handleSaveVariation(v, i)}>
               <Check className="h-3 w-3" /> Approve
+            </Button>
+            <Button size="sm" variant="default" className="gap-1" onClick={() => handlePublishNow(v, i)} disabled={publishingIndex === i}>
+              {publishingIndex === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />} Publish
             </Button>
           </div>
           <ExportPostButton variation={v} brandName={selectedBrand?.name} />
@@ -379,6 +427,8 @@ const Generate = () => {
         sharing={sharing}
         onExportImage={() => exportImage(v)}
         onExportCaption={() => exportCaption(v)}
+        onPublish={() => handlePublishNow(v, i)}
+        publishing={publishingIndex === i}
       />
     );
   };

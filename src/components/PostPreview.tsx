@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye, CalendarDays, Download, Share2 } from "lucide-react";
+import { Check, Linkedin, Instagram, Star, ImageIcon, Loader2, Eye, CalendarDays, Download, Share2, Send } from "lucide-react";
 
 interface PostPreviewProps {
   variation: {
@@ -28,6 +28,8 @@ interface PostPreviewProps {
   onExportCaption?: () => void;
   onShare?: () => void;
   sharing?: boolean;
+  onPublish?: () => void;
+  publishing?: boolean;
 }
 
 export default function PostPreview({
@@ -44,6 +46,8 @@ export default function PostPreview({
   onExportCaption,
   onShare,
   sharing,
+  onPublish,
+  publishing,
 }: PostPreviewProps) {
   const isLinkedIn = variation.platform === "linkedin";
   const [generatingImg, setGeneratingImg] = useState(false);
@@ -159,6 +163,18 @@ export default function PostPreview({
           >
             <Check className="h-3 w-3" /> Approve
           </Button>
+          {onPublish && (
+            <Button
+              size="sm"
+              className="gap-1"
+              variant="default"
+              onClick={(e) => { e.stopPropagation(); onPublish(); }}
+              disabled={publishing}
+            >
+              {publishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+              Publish
+            </Button>
+          )}
         </div>
         {(onExportImage || onExportCaption) && (
           <div className="flex gap-1 pt-1">
