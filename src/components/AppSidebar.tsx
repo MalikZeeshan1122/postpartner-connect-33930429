@@ -26,7 +26,7 @@ const mainNav = [
   { to: "/schedule", label: "Schedule", icon: Clock },
   { to: "/planner", label: "Calendar", icon: CalendarDays },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/brands", label: "Instagram Grid", icon: LayoutGrid },
+  { to: "/brands", label: "Brand Grid", icon: LayoutGrid },
   { to: "/media", label: "Media Library", icon: ImageIcon },
 ];
 
