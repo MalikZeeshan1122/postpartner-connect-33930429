@@ -16,10 +16,12 @@ serve(async (req) => {
     const { imageUrl, prompt, brandName } = await req.json();
     if (!imageUrl && !prompt) throw new Error("Either imageUrl or prompt is required");
 
-    console.log("Generating video for:", prompt?.substring(0, 80) || "image-to-video");
+    console.log("Generating animated image for:", prompt?.substring(0, 80) || "image-based");
 
-    // Use image-to-video if we have a generated post image, otherwise text-to-video
-    const videoPrompt = prompt || `Subtle animated social media post with gentle motion effects. Professional marketing content for ${brandName || "a brand"}. Smooth camera movement, clean and modern.`;
+    // Generate a stylized "cinematic" version of the image as a motion-style still
+    const enhancedPrompt = imageUrl
+      ? `Re-imagine this social media post image with a dramatic cinematic style: add motion blur streaks, light flares, dynamic lighting, and a sense of movement. Make it look like a freeze-frame from a professional video ad. Keep the brand message and composition intact. ${prompt || ""}`
+      : `Create a dramatic, cinematic social media post image with motion blur, light flares, and dynamic energy. Professional marketing content for ${brandName || "a brand"}. ${prompt}`;
 
     const requestBody: any = {
       model: "google/gemini-2.5-flash-image",
@@ -28,10 +30,10 @@ serve(async (req) => {
           role: "user",
           content: imageUrl
             ? [
-                { type: "text", text: `Create a subtle 5-second animation of this social media post image. Add gentle motion like a slow zoom, parallax, or floating elements. Keep it professional and brand-appropriate. ${videoPrompt}` },
+                { type: "text", text: enhancedPrompt },
                 { type: "image_url", image_url: { url: imageUrl } },
               ]
-            : videoPrompt,
+            : enhancedPrompt,
         },
       ],
       modalities: ["image", "text"],
@@ -48,19 +50,19 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Video gen error:", response.status, errText);
+      console.error("Image gen error:", response.status, errText);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      throw new Error(`Video gen error: ${response.status}`);
+      throw new Error(`Image gen error: ${response.status}`);
     }
 
     const result = await response.json();
     const generatedImage = result.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!generatedImage) {
-      console.error("No image/video in response");
-      throw new Error("Video generation failed - no output returned");
+      console.error("No image in response:", JSON.stringify(result).substring(0, 300));
+      throw new Error("Image generation failed - no output returned");
     }
 
     // Upload to storage
@@ -68,13 +70,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    const base64Data = generatedImage.replace(/^data:image\/\w+;base64,/, "").replace(/^data:video\/\w+;base64,/, "");
+    const base64Data = generatedImage.replace(/^data:image\/\w+;base64,/, "");
     const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-    const fileName = `post-videos/${crypto.randomUUID()}.mp4`;
+    const fileName = `post-videos/${crypto.randomUUID()}.png`;
 
     const { error: uploadError } = await supabaseClient.storage
       .from("post-assets")
-      .upload(fileName, bytes, { contentType: "video/mp4", upsert: true });
+      .upload(fileName, bytes, { contentType: "image/png", upsert: true });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
@@ -87,7 +89,7 @@ serve(async (req) => {
       .from("post-assets")
       .getPublicUrl(fileName);
 
-    console.log("Video generated and uploaded:", publicUrl.publicUrl);
+    console.log("Animated image generated and uploaded:", publicUrl.publicUrl);
 
     return new Response(JSON.stringify({ videoUrl: publicUrl.publicUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
