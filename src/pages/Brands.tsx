@@ -166,8 +166,9 @@ const Brands = () => {
                     <div>
                       <CardTitle className="text-lg">{brand.name}</CardTitle>
                       {brand.website_url && (
-                        <CardDescription className="flex items-center gap-1">
-                          <Globe className="h-3 w-3" /> {brand.website_url}
+                        <CardDescription className="flex items-center gap-1 max-w-[220px]">
+                          <Globe className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{brand.website_url}</span>
                         </CardDescription>
                       )}
                     </div>
