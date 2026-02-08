@@ -29,6 +29,7 @@ import {
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import QuickActions from "@/components/dashboard/QuickActions";
+import ConnectedAccounts from "@/components/dashboard/ConnectedAccounts";
 
 interface Suggestion {
   title: string;
@@ -190,6 +191,7 @@ const Dashboard = () => {
         <DashboardHero />
         <DashboardStats stats={stats} />
         <QuickActions />
+        <ConnectedAccounts />
 
         {/* AI Content Suggestions */}
         <motion.div
