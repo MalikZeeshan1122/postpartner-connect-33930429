@@ -48,8 +48,12 @@ const Generate = () => {
   const [extraContext, setExtraContext] = useState("");
   const [selectedFormats, setSelectedFormats] = useState<string[]>(["single"]);
   const [generating, setGenerating] = useState(false);
-  const [variations, setVariations] = useState<any[]>([]);
-  const [feedback, setFeedback] = useState<any[]>([]);
+  const [variations, setVariations] = useState<any[]>(() => {
+    try { return JSON.parse(sessionStorage.getItem("pp_variations") || "[]"); } catch { return []; }
+  });
+  const [feedback, setFeedback] = useState<any[]>(() => {
+    try { return JSON.parse(sessionStorage.getItem("pp_feedback") || "[]"); } catch { return []; }
+  });
   const [selectedVariation, setSelectedVariation] = useState<number | null>(null);
   const [editFeedback, setEditFeedback] = useState("");
   const [iterating, setIterating] = useState(false);
@@ -57,6 +61,14 @@ const Generate = () => {
   const [scheduleVariation, setScheduleVariation] = useState<any>(null);
   const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false);
   const { sharePost, sharing } = useSharePost();
+
+  // Persist variations & feedback to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("pp_variations", JSON.stringify(variations));
+  }, [variations]);
+  useEffect(() => {
+    sessionStorage.setItem("pp_feedback", JSON.stringify(feedback));
+  }, [feedback]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
