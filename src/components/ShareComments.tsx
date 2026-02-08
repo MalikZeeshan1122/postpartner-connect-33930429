@@ -62,6 +62,15 @@ export default function ShareComments({ sharedPostId }: ShareCommentsProps) {
       if (error) throw error;
       setComments((prev) => [...prev, data as ShareComment]);
       setText("");
+
+      // Fire-and-forget email notification to post owner
+      supabase.functions.invoke("notify-comment", {
+        body: {
+          shared_post_id: sharedPostId,
+          author_name: name.trim(),
+          comment: text.trim(),
+        },
+      }).catch((err) => console.warn("Notification failed:", err));
       toast({ title: "Comment added!" });
     } catch (e: any) {
       toast({ title: e.message || "Failed to add comment", variant: "destructive" });
