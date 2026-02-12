@@ -68,6 +68,7 @@ const Analytics = () => {
   const [analytics, setAnalytics] = useState<AnalyticsRow[]>([]);
   const [posts, setPosts] = useState<PostWithAnalytics[]>([]);
   const [dateRange, setDateRange] = useState("30");
+  const [platformFilter, setPlatformFilter] = useState("all");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -75,7 +76,7 @@ const Analytics = () => {
 
   useEffect(() => {
     if (user) fetchAnalytics();
-  }, [user, dateRange]);
+  }, [user, dateRange, platformFilter]);
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -99,6 +100,7 @@ const Analytics = () => {
     // Aggregate analytics per post
     const postMap = new Map<string, PostWithAnalytics>();
     for (const post of (postsData || []) as any[]) {
+      if (platformFilter !== "all" && post.platform !== platformFilter) continue;
       postMap.set(post.id, {
         id: post.id,
         platform: post.platform,
@@ -135,8 +137,12 @@ const Analytics = () => {
     setLoading(false);
   };
 
-  // Aggregate daily totals for chart
+  // Build set of post IDs matching the platform filter
+  const filteredPostIds = new Set(posts.map(p => p.id));
+
+  // Aggregate daily totals for chart (only for filtered posts)
   const dailyData = analytics.reduce<Record<string, { date: string; views: number; clicks: number; engagement: number }>>((acc, row) => {
+    if (!filteredPostIds.has(row.scheduled_post_id)) return acc;
     if (!acc[row.recorded_at]) {
       acc[row.recorded_at] = { date: row.recorded_at, views: 0, clicks: 0, engagement: 0 };
     }
@@ -175,16 +181,28 @@ const Analytics = () => {
             <h1 className="text-2xl font-bold">Post Analytics</h1>
             <p className="text-muted-foreground">Track performance metrics across your published content</p>
           </div>
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={platformFilter} onValueChange={setPlatformFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Platforms</SelectItem>
+                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                <SelectItem value="instagram">Instagram</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Summary cards */}
